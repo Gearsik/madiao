@@ -6,7 +6,12 @@ const { startGame } = require('./game/state');  //function that builds the full 
 const {isPlayHonest} = require('./game/deck');  //function that checks if a declared play was honest or a bluff. It requires the deck.js file to work
 const app = express();                          //creates the express app
 const server = http.createServer(app);          //wraps express in a raw http server so socket.io can attach to it
-const io = new Server(server);                  //creates the socket.io server on top of the http server
+const io = new Server(server, {
+    cors:{
+        origin: "http://localhost:3000",
+        methods: ["GET", "POST"]
+    }
+});                  //creates the socket.io server on top of the http server
 
 //a basic test block page so we can confirm the server is running when we open it in a browser
 app.get('/', (req, res) => {

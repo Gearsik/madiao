@@ -1,0 +1,126 @@
+.join-screen{
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(ellipse at center, #1a1a3e 0%, #0d0d1a 100%);
+}
+
+.join-card{
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 48px 40px;
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.join-title{
+    font-size: 3rem;
+    font-weight: 700;
+    color: #c9a84c;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+}
+
+.join-subtitle{
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.4);
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+}
+
+.join-form{
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.join-input{
+    width: 100%;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    color: #c9a84c;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.join-input:focus{
+    border-color: #c9a84c;
+}
+
+.join-input--code{
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    font-size: 1.2rem;
+    text-align: center;
+}
+
+.join-button{
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    letter-spacing: 1px;
+}
+
+.join-button:hover:not(:disabled){
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.join-button:disabled{
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.join-button--create{
+    background: #c9a84c;
+    color: #1a1a2e;
+}
+
+.join-button--join{
+    background: rgba(255, 255, 255, 0.1);
+    color: #e0e0e0;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.join-divider{
+    display: flex;
+    align-items: center;
+    gap:12px;
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 0.8rem;
+}
+
+.join-divider::before,
+.join-divider::after{
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.join-error{
+    color: #e05555;
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 8px;
+    background: rgba(224, 85, 85, 0.1);
+    border-radius: 6px;
+    border: 1px solid rgba(224, 85, 85, 0.2);
+}

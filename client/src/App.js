@@ -1,25 +1,41 @@
-import logo from './logo.svg';
+import { userState, useState } from 'react';
+import JoinScreen from './components/lobby/JoinScreen';
+import LobbyRoom from './components/lobby/LobbyRoom';
+import GameTable from './components/game/GameTable';
 import './App.css';
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+function App(){
+    const [screen, setScreen] = useState('join');
+    const [lobbyData, setLobbyData] = useState(null);
+    const [gameData, setGameData] = useState(null);
+
+    function handleLobbyJoined(data){
+        setLobbyData(data);
+        setScreen('lobby');
+    }
+
+    function handleGamesStarted(data){
+        setGameData(data);
+        setScreen('game');
+    }
+
+    return(
+        <div className="App">
+            {screen === 'join' && (
+                <JoinScreen onLobbyJoined={handleLobbyJoined}/>
+            )}
+            {screen === 'lobby' && (
+                <LobbyRoom
+                lobbyData={lobbyData}
+                onGameStarted={handleGamesStarted}/>
+            )}
+            {screen === 'game' &&(
+                <GameTable
+                initialGameData={gameData}
+                lobbyData={lobbyData}/>
+            )}
+        </div>
+    );
 }
 
 export default App;
