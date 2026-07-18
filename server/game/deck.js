@@ -50,7 +50,7 @@ function shuffle(deck) {
 module.exports = {deckBuilding, shuffle, cardAutoMatching, isPlayHonest};
 
 //check for testing if the deck builds everything correctly
-const deck = shuffle(deckBuilding());
-console.log('Total cards:', deck.length); //number of all cards, should be 56
-console.log('Wild cards:', deck.filter(c => c.type === 'wild').length); //this number should come out as 16
-console.log('Numbers:', deck.filter(c => c.type === 'number').length); //number of all numbered cards including copies, 40 in total
+//const deck = shuffle(deckBuilding());
+//console.log('Total cards:', deck.length); //number of all cards, should be 56
+//console.log('Wild cards:', deck.filter(c => c.type === 'wild').length); //this number should come out as 16
+//console.log('Numbers:', deck.filter(c => c.type === 'number').length); //number of all numbered cards including copies, 40 in total
