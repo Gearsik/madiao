@@ -41,7 +41,8 @@ function startGame(lobbyPlayers) {
         currentPlayerIndex,         //points to whoever's turn it is in the players array
         turnStartedAt: Date.now(),  //the 20s cooldown starts from here
         phase: 'waiting',         //the game hasnt started until the first card is played
-        winner: null                //starts null until we have a winner
+        winner: null,               //starts null until we have a winner
+        roundDeclaredNumber: null
     };
 }
 

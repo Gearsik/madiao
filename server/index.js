@@ -81,8 +81,10 @@ function broadcastGameState(io, lobbyCode, gameState){
             declaredNumber: gameState.pendingPlay.declaredNumber,           //what number they claimed
             declaredCount: gameState.pendingPlay.declaredCount,             //how many cards they said they played
             challengeWindowOpen: gameState.pendingPlay.challengeWindowOpen  //whether the challenge button is active yet
-        } : null,                                                           //no pending play, send null so the client knows to hide the pending zone
+        }   : null,                                                         //no pending play, send null so the client knows to hide the pending zone
+        roundDeclaredNumber: gameState.roundDeclaredNumber ?? null,         //sent to all clients so they know what number is in play
         currentPlayerIndex: gameState.currentPlayerIndex,                   //whose turn it is
+        turnStartedAt: gameState.turnStartedAt ?? null,                     //when the current turn started, used by clients to calculate the countdown timer
         phase: gameState.phase,                                             //what stage the game is in right now
         winner: gameState.winner                                            //null until someone wins
     };
@@ -138,6 +140,7 @@ function handleTurnTimeout(io, lobbyCode, gameState, timers){
 
     //not eliminated yet, just move on to the next player
     gameState.currentPlayerIndex = getNextPlayerIndex(gameState);   //advance to the next active player
+    gameState.turnStartedAt = Date.now();
     broadcastGameState(io, lobbyCode, gameState);                   //tell everyone whose turn it is now
 
     //start a fresh 20 second timer for the next player
@@ -191,7 +194,7 @@ function rollDrunkness(io, lobbyCode, gameState, timers, winner, loser){
     const chance = eliminationChance[loser.drunkness];  //look up their current elimination chance
     const eliminated = roll < chance;                   //true if the roll falls within the elimination chance
 
-    //wait 7 seconds for the challenge result screen to finish before resuming the game
+    //wait 5 seconds for the challenge result screen to finish before resuming the game
     setTimeout(() => {
 
         if(eliminated){
@@ -212,7 +215,7 @@ function rollDrunkness(io, lobbyCode, gameState, timers, winner, loser){
         //the challenge winner always starts the next turn, jump directly to their index
         gameState.currentPlayerIndex = gameState.players.findIndex( p => p.id === winner.id);
         gameState.phase = 'waiting';     //open the floor for the next declaration
-
+        gameState.turnStartedAt = Date.now();
         broadcastGameState(io, lobbyCode, gameState);   //tell everyone it's the winner's turn
 
         //start the 20 second turn timer for the challenge winner
@@ -220,7 +223,7 @@ function rollDrunkness(io, lobbyCode, gameState, timers, winner, loser){
             handleTurnTimeout(io, lobbyCode, gameState, timers);    //skip them if they don't play in time
         }, 20000);
 
-    }, 7000);   //7 seconds matches the result screen duration shown to all players
+    }, 5000);   //5 seconds matches the result screen duration shown to all players
 }
 
 //every player on connection gets their own socket, aka socket.id. That ID is used to identify each player from others.
@@ -365,7 +368,9 @@ io.on('connection', (socket) => {
                     cardCount: p.hand.length            //how many cards each player got is still visable
                 })),
                 currentPlayerIndex: gameState.currentPlayerIndex,   //who goes first
-                phase: gameState.phase                              //starts as 'waiting'
+                phase: gameState.phase,                             //starts as 'waiting'
+                roundDeclaredNumber: gameState.roundDeclaredNumber ?? null,
+                turnStartedAt: gameState.turnStartedAt ?? null      //makes the timer show up and stay 
             });
         });
         console.log(`Game started in lobby ${lobbyCode} with ${lobby.players.length} players`);
@@ -391,13 +396,19 @@ io.on('connection', (socket) => {
             return;
         }
 
-        const currentPlayer = gameState.players[gameState.currentPlayerIndex];      //the player whose turn it currently is
+        const currentPlayer = gameState.players[gameState.currentPlayerIndex];
         if (currentPlayer.id !== socket.id){
-            socket.emit('game_error', {message: 'It is not your turn'});            //reject if it's not their turn
+            socket.emit('game_error', {message: 'It is not your turn'});
             return;
         }
 
         const {declaredNumber, cardIds} = data;     //pull the declared number and list of selected card ids from the event
+
+        const uniqueIds = [...new Set(cardIds)];
+        if (uniqueIds.length !== cardIds.length) {
+            socket.emit('game_error', {message: 'Duplicate cards selected'});
+            return;
+        }
 
         //declared number must be between 1 and 10, as those are the only valid numbers in the game
         if (!declaredNumber || declaredNumber < 1 || declaredNumber > 10){
@@ -406,13 +417,13 @@ io.on('connection', (socket) => {
         }
 
         //must select at least one card, an empty declaration doesn't make sense
-        if (!cardIds || cardIds.length === 0){
+        if (!uniqueIds || uniqueIds.length === 0){
             socket.emit('game_error', {message: 'You must declare at least one card'});
             return;
         }
-
+        
         //look up each selected card id in the player's actual hand to make sure they own all of them
-        const declaredCards = cardIds.map(id => currentPlayer.hand.find(c => c.id === id));
+        const declaredCards = uniqueIds.map(id => currentPlayer.hand.find(c => c.id === id));
         if (declaredCards.some(c => c === undefined)){
             socket.emit('game_error', {message: 'One or more selected cards are not in your hand'});
             return;
@@ -440,8 +451,14 @@ io.on('connection', (socket) => {
             gameState.pile.cards.push(...gameState.pendingPlay.cards)   //no empty hand win, merge the previous play into the pile as normal
         }
 
+        gameState.roundDeclaredNumber = declaredNumber;     //lock in the declared number for this round
+
         //remove the declared cards from the player's hand now that they've been committed
-        currentPlayer.hand = currentPlayer.hand.filter(c => !cardIds.includes(c.id));
+        currentPlayer.hand = currentPlayer.hand.filter(c => !uniqueIds.includes(c.id));
+
+        //confirm the play to the declaring player with their updated hand
+        //this is the signal the client uses to remove the played cards
+        io.to(socket.id).emit('hand_updated', {hand: currentPlayer.hand});
 
         //create the new pending play. This sits in the pending zone visible to all players
         //actual cards are stored here server-side but never sent to other players unless a challenge happens
@@ -450,39 +467,36 @@ io.on('connection', (socket) => {
             cards: declaredCards,                   //the real cards, ones that are hidden from other players
             declaredNumber,                         //the number they claimed
             declaredCount: declaredCards.length,    //how many cards they said they played, this is what others see
-            playedAt: Date.now(),                   //timestamp used to track the 5 second cooldown
-            challengeWindowOpen: false,              //starts closed, flips to true after 5 seconds
+            playedAt: Date.now(),                   //timestamp used to track the cooldown
+            challengeWindowOpen: false,              //starts closed, flips to true after a few seconds
             isEmptyingHand: currentPlayer.hand.length === 0  //true if this play used their last card, checked on the next turn to trigger an empty hand win
         };
 
         currentPlayer.consecutive_skips = 0;        //they played successfully so reset their skip streak
 
-        gameState.phase = 'cooldown';               //nobody can challenge yet, the 5 second cooldown just started
-
+        gameState.phase = 'cooldown';               //nobody can challenge yet, the cooldown just started
         //cancel the turn timer since they played in time
         if (timers.turnTimer){
             clearTimeout(timers.turnTimer);
             timers.turnTimer = null;
         }
-
         broadcastGameState(io, lobbyCode, gameState);               //tell everyone about the new pending play
 
         //after 5 seconds, open the challenge window and start the next player's turn timer
         timers.cooldownTimer = setTimeout(() => {
             gameState.pendingPlay.challengeWindowOpen = true;       //challenge button becomes active for all other players
             gameState.phase = 'challenge_open';                     //game is now in the challengeable window
-
             const nextPlayerIndex = getNextPlayerIndex(gameState);  //work out who goes next, skipping eliminated players
             gameState.currentPlayerIndex = nextPlayerIndex;         //set them as the current player
-
+            gameState.turnStartedAt = Date.now();
+            console.log('Turn started at set to:', gameState.turnStartedAt, 'for player index:', nextPlayerIndex);
             broadcastGameState(io, lobbyCode, gameState);           //tell everyone the window is open and whose turn it is
-
             //start the 20 second turn timer for the next player
             timers.turnTimer = setTimeout(() => {
                 handleTurnTimeout(io, lobbyCode, gameState, timers);    //skip them if they don't play in time
            }, 20000);
 
-        }, 5000);       //5 second cooldown before anyone can challenge
+        }, 700);       //700ms cooldown before anyone can challenge
     });
 
     //handles a player clicking the challenge button on someone else's pending play
@@ -503,16 +517,13 @@ io.on('connection', (socket) => {
             return;
         }
 
-        //a player can't challenge their own play
-        if (gameState.pendingPlay.playerId === socket.id){
-            socket.emit('game_error', {message: 'You cannot challenge your own play'});
+        if (!gameState.pendingPlay){
             return;
         }
 
-        //the player whose turn it currently is can't challenge either, they should be playing cards
-        const currentPlayer = gameState.players[gameState.currentPlayerIndex];
-        if(currentPlayer.id === socket.id){
-            socket.emit('game_error', {message: 'You cannot challenge when its your turn to play'});
+        //a player can't challenge their own play
+        if (gameState.pendingPlay.playerId === socket.id){
+            socket.emit('game_error', {message: 'You cannot challenge your own play'});
             return;
         }
 
@@ -548,9 +559,11 @@ io.on('connection', (socket) => {
         //loser takes everything, combine the pile and the pending play cards, add them all to the loser's hand
         const allPileCards = [...gameState.pile.cards, ...pendingCards];
         loser.hand = [...loser.hand, ...allPileCards];
+        io.to(loser.id).emit('hand_updated', { hand: loser.hand });     //send the loser their updated hand privately since they just took the pile
 
         gameState.pile.cards= [];       //pile is now empty, as it all went to the loser
         gameState.pendingPlay = null;   //pending play is resolved, so clear it
+        gameState.roundDeclaredNumber = null;    //round is over, next play starts a fresh declaration
 
         //show the result screen to everyone, this reveals the actual cards and blocks all input for 7 seconds on the client
         io.to(lobbyCode).emit('challenge_result', {
@@ -717,7 +730,16 @@ io.on('connection', (socket) => {
                     playerTokens.delete(token);     //remove every token that pointed to this lobby
                 }
             }
+
+            //cancel any running timers before deleting
+            const timers = gameTimers.get(lobbyCode);
+            if(timers){
+                if(timers.turnTimer) clearTimeout(timers.turnTimer);
+                if(timers.cooldownTimer) clearTimeout(timers.cooldownTimer);
+                gameTimers.delete(lobbyCode);   // free the timer slot
+            }
             lobbies.delete(lobbyCode);
+            gameStates.delete(lobbyCode);
             return;
         }
 
