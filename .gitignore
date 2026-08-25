@@ -43,3 +43,6 @@ Thumbs.db
 *.key
 *.p12
 *.pfx
+
+# private project files
+Madiao - Game Specification.md
