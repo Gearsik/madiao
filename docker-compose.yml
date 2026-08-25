@@ -19,7 +19,7 @@ services:
     build:
       context: ./client
       args:
-        - REACT_APP_SERVER_URL: ${REACT_APP_SERVER_URL}
+        REACT_APP_SERVER_URL: ${REACT_APP_SERVER_URL}
 
     container_name: madiao-client
 
