@@ -1,8 +1,27 @@
 services:
-    db:
-        image:
-        container_name:
-        environment:
-        ports:
-        volumes:
-volumes:
+
+  server:
+    build:
+      context: ./server
+
+    container_name: madiao-server
+
+    ports:
+      - "3001:3001"
+
+    environment:
+      CLIENT_ORIGIN: http://178.105.59.4:3000
+
+    restart: unless-stopped
+
+
+  client:
+    build:
+      context: ./client
+
+    container_name: madiao-client
+
+    ports:
+      - "3000:80"
+
+    restart: unless-stopped

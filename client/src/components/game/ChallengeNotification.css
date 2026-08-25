@@ -1,0 +1,653 @@
+/* challenge and timeout overlays */
+.chall-notif-overlay,
+.timeout-overlay {
+    position: fixed;
+    inset: 0;
+
+    z-index: 500;
+
+    opacity: 1;
+
+    transition: opacity 500ms ease;
+}
+
+.chall-notif-overlay {
+    overflow: hidden;
+
+    background: rgba(0, 0, 0, 0.82);
+
+    animation: challengeOverlayIn 300ms ease-out both;
+}
+
+.timeout-overlay {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(0, 0, 0, 0.72);
+}
+
+.chall-notif-overlay--hidden,
+.timeout-overlay--hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+@keyframes challengeOverlayIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+
+/* challenge layout */
+.challenge-screen {
+    position: relative;
+
+    width: 100%;
+    height: 100%;
+
+    overflow: hidden;
+
+    font-family: Georgia, serif;
+    color: var(--txt-primary);
+}
+
+
+/* large CHALLENGE title that moves into the result layout */
+.challenge-hero {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+
+    z-index: 20;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    white-space: nowrap;
+
+    transform:
+        translate(-50%, -50%)
+        scale(1);
+
+    transition:
+        top 700ms cubic-bezier(0.22, 0.85, 0.32, 1),
+        transform 700ms cubic-bezier(0.22, 0.85, 0.32, 1);
+}
+
+.challenge-hero-text {
+    font-size: clamp(4rem, 9vw, 9rem);
+    font-weight: 500;
+
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+
+    color: #ffffff;
+
+    text-shadow: 0 5px 30px rgba(0, 0, 0, 0.55);
+
+    animation: challengeImpact 650ms ease-out both;
+}
+
+@keyframes challengeImpact {
+    0% {
+        opacity: 0;
+
+        letter-spacing: 0.22em;
+
+        filter: blur(5px);
+
+        transform: scale(1.08);
+    }
+
+    45% {
+        opacity: 1;
+
+        filter: blur(0);
+
+        transform: scale(1);
+    }
+
+    100% {
+        opacity: 1;
+
+        letter-spacing: 0.11em;
+
+        transform: scale(1);
+    }
+}
+
+/* after the opening flash the title shrinks and moves below the result */
+.challenge-hero--layout,
+.challenge-hero--resolved {
+    top: 84%;
+
+    transform:
+        translate(-50%, -50%)
+        scale(0.40);
+}
+
+.challenge-hero--successful .challenge-hero-text {
+    color: var(--gold);
+}
+
+.challenge-hero--unsuccessful .challenge-hero-text {
+    color: #e05555;
+}
+
+
+/* challenge result content */
+.challenge-content {
+    position: absolute;
+    left: 50%;
+    top: 35%;
+
+    width: min(92vw, 1100px);
+    height: 66%;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    transform: translate(-50%, -50%);
+
+    animation:
+        challengeContentIn
+        600ms
+        cubic-bezier(0.22, 0.85, 0.32, 1)
+        both;
+}
+
+@keyframes challengeContentIn {
+    from {
+        opacity: 0;
+
+        transform:
+            translate(
+                -50%,
+                calc(-50% - 34px)
+            );
+    }
+
+    to {
+        opacity: 1;
+
+        transform: translate(-50%, -50%);
+    }
+}
+
+
+/* challenger information */
+.challenge-player-info {
+    flex: 1;
+
+    width: 100%;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+
+    gap: 5px;
+
+    padding-bottom: 22px;
+
+    text-align: center;
+}
+
+.challenge-player-name {
+    margin: 0;
+
+    font-size: clamp(1.6rem, 3vw, 2.7rem);
+    font-weight: 700;
+
+    color: var(--txt-primary);
+
+    letter-spacing: 0.08em;
+}
+
+.challenge-player-target {
+    margin: 0;
+
+    font-size: clamp(0.85rem, 1.35vw, 1.1rem);
+
+    color: rgba(232, 223, 200, 0.72);
+}
+
+.challenge-player-target strong {
+    color: var(--txt-primary);
+    font-weight: 700;
+}
+
+.challenge-player-declaration {
+    margin: 3px 0 0;
+
+    font-size: clamp(0.8rem, 1.2vw, 1rem);
+
+    color: var(--gold);
+
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.challenge-player-declaration strong {
+    font-weight: 700;
+}
+
+
+/* divider between the challenger information and revealed cards */
+.challenge-divider {
+    flex: 0 0 auto;
+
+    width: min(50vw, 700px);
+    height: 1px;
+
+    margin: 0;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(201, 168, 76, 0.7) 15%,
+            rgba(201, 168, 76, 0.7) 85%,
+            transparent
+        );
+
+    transform-origin: center;
+
+    animation: challengeDividerIn 600ms ease-out both;
+    animation-delay: 180ms;
+}
+
+@keyframes challengeDividerIn {
+    from {
+        opacity: 0;
+        transform: scaleX(0);
+    }
+
+    to {
+        opacity: 1;
+        transform: scaleX(1);
+    }
+}
+
+
+/* revealed cards and result text */
+.challenge-reveal {
+    flex: 1;
+
+    width: 100%;
+    min-height: 0;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+
+    padding-top: 24px;
+}
+
+.challenge-cards {
+    width: 100%;
+
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: flex-end;
+
+    gap: clamp(5px, 0.75vw, 12px);
+
+    perspective: 800px;
+}
+
+
+/* card flip */
+.challenge-card-wrapper {
+    position: relative;
+
+    width: clamp(38px, 4vw, 68px);
+
+    aspect-ratio: 168 / 468;
+
+    flex: 0 0 auto;
+
+    transform: rotateY(0deg);
+
+    transform-style: preserve-3d;
+    -webkit-transform-style: preserve-3d;
+
+    transition: transform 600ms ease;
+    transition-delay: var(--flip-delay);
+}
+
+.challenge-card-wrapper--flipped {
+    transform: rotateY(180deg);
+}
+
+.challenge-card--back,
+.challenge-card--face {
+    position: absolute;
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+
+    border-radius: 4px;
+
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+
+    box-shadow: 0 5px 12px rgba(0, 0, 0, 0.42);
+}
+
+
+/* face-down side */
+.challenge-card--back {
+    transform:
+        rotateY(0deg)
+        translateZ(1px);
+
+    background:
+        linear-gradient(
+            160deg,
+            #1a2a1a 0%,
+            #101a10 50%,
+            #0d150d 100%
+        );
+
+    border: 1.5px solid rgba(201, 168, 76, 0.40);
+}
+
+.challenge-card--back::before {
+    content: '';
+
+    position: absolute;
+    inset: 4px;
+
+    border: 1px solid rgba(242, 237, 230, 0.34);
+    border-radius: 3px;
+}
+
+.challenge-card--back::after {
+    content: '';
+
+    position: absolute;
+    left: 50%;
+    top: 50%;
+
+    width: 28%;
+
+    aspect-ratio: 1;
+
+    transform:
+        translate(-50%, -50%)
+        rotate(45deg);
+
+    border: 1px solid rgba(201, 168, 76, 0.30);
+
+    box-shadow:
+        inset 0 0 6px rgba(201, 168, 76, 0.06);
+}
+
+
+/* face-up side starts turned away, the wrapper rotation brings it into view */
+.challenge-card--face {
+    transform:
+        rotateY(180deg)
+        translateZ(1px)
+        scale(1.06);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    overflow: visible;
+
+    border: none;
+}
+
+.challenge-card--face img {
+    position: absolute;
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    transform: none !important;
+}
+
+.challenge-card-value {
+    position: absolute;
+    top: 25%;
+    left: 50%;
+
+    z-index: 3;
+
+    transform: translateX(-50%);
+
+    font-size: clamp(0.8rem, 1.45vw, 1.35rem);
+    font-weight: 700;
+    line-height: 1;
+
+    color: var(--ink);
+
+    pointer-events: none;
+}
+
+
+/* a wrong normal card gets its red border after its own flip finishes */
+.challenge-card--face::after {
+    content: '';
+
+    position: absolute;
+    inset: -2px;
+
+    z-index: 10;
+
+    border: 2px solid #e05555;
+    border-radius: 5px;
+
+    box-shadow: 0 0 10px rgba(224, 85, 85, 0.8);
+
+    opacity: 0;
+
+    pointer-events: none;
+}
+
+.challenge-card-wrapper--flipped.challenge-card-wrapper--bluff
+.challenge-card--face::after {
+    animation:
+        challengeBluffArrive
+        350ms
+        cubic-bezier(0.34, 1.56, 0.64, 1)
+        forwards;
+
+    animation-delay:
+        calc(
+            var(--flip-delay) +
+            600ms
+        );
+}
+
+@keyframes challengeBluffArrive {
+    from {
+        opacity: 0;
+
+        transform:
+            translateY(10px)
+            scale(0.88);
+    }
+
+    to {
+        opacity: 1;
+
+        transform:
+            translateY(0)
+            scale(1);
+    }
+}
+
+
+/* final challenge result */
+.challenge-verdict,
+.challenge-penalty {
+    opacity: 0;
+
+    animation:
+        challengeResultTextIn
+        400ms
+        ease-out
+        forwards;
+}
+
+.challenge-verdict {
+    margin: clamp(16px, 2vh, 24px) 0 0;
+
+    font-size: clamp(1.15rem, 2vw, 1.7rem);
+    font-weight: 700;
+
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+
+    animation-delay: 1050ms;
+}
+
+.challenge-verdict--honest {
+    color: #4caf50;
+}
+
+.challenge-verdict--bluff {
+    color: #e05555;
+}
+
+.challenge-penalty {
+    max-width: 650px;
+
+    margin: 12px 0 0;
+
+    font-size: clamp(1.35rem, 2vw, 1.75rem);
+    font-weight: 600;
+    line-height: 1.4;
+
+    color: rgba(232, 223, 200, 0.94);
+
+    text-align: center;
+
+    animation-delay: 1250ms;
+}
+
+.challenge-penalty strong {
+    color: var(--gold);
+    font-weight: 700;
+}
+
+@keyframes challengeResultTextIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+/* timeout notification */
+.timeout-box {
+    width: min(90vw, 560px);
+
+    padding: 36px 46px;
+
+    background: #111512;
+
+    border: 1px solid rgba(201, 168, 76, 0.22);
+    border-radius: 5px;
+
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.65);
+
+    text-align: center;
+
+    animation: timeoutBoxIn 300ms ease-out both;
+}
+
+@keyframes timeoutBoxIn {
+    from {
+        opacity: 0;
+
+        transform:
+            translateY(-18px)
+            scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+
+        transform:
+            translateY(0)
+            scale(1);
+    }
+}
+
+.timeout-message {
+    margin: 0;
+
+    font-family: Georgia, serif;
+    font-size: clamp(1.25rem, 2vw, 1.55rem);
+    line-height: 1.5;
+
+    color: rgba(232, 223, 200, 0.92);
+}
+
+
+/* short landscape screens */
+@media
+(max-height: 500px)
+and
+(orientation: landscape) {
+
+    .challenge-content {
+        top: 34%;
+        height: 64%;
+    }
+
+    .challenge-player-info {
+        padding-bottom: 12px;
+    }
+
+    .challenge-player-name {
+        font-size: clamp(1.2rem, 3vw, 1.8rem);
+    }
+
+    .challenge-reveal {
+        padding-top: 12px;
+    }
+
+    .challenge-card-wrapper {
+        width: clamp(30px, 3.5vw, 46px);
+    }
+
+    .challenge-verdict {
+        margin-top: 10px;
+        font-size: clamp(0.9rem, 1.8vw, 1.25rem);
+    }
+
+    .challenge-penalty {
+        margin-top: 6px;
+        font-size: clamp(1rem, 1.8vw, 1.25rem);
+    }
+
+    .challenge-hero--layout,
+    .challenge-hero--resolved {
+        top: 88%;
+    }
+}

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 280">
+
+  
+  <rect x="10" y="10" width="180" height="260" fill="none" stroke="#242424" stroke-width="8" stroke-linejoin="miter" stroke-miterlimit="10"></rect>
+
+  
+  <rect x="24" y="24" width="152" height="232" fill="none" stroke="#c9a84c" stroke-width="1.5" stroke-linejoin="miter" stroke-miterlimit="10"></rect>
+
+  
+  <path d="M 24,58 L 24,24 L 58,24" fill="none" stroke="#c9a84c" stroke-width="2.2" stroke-linejoin="miter" stroke-linecap="square"></path>
+  <path d="M 24,46 L 36,46 L 36,36 L 46,36 L 46,24" fill="none" stroke="#c9a84c" stroke-width="2.2" stroke-linejoin="miter" stroke-linecap="square"></path>
+
+  
+  <path d="M 176,58 L 176,24 L 142,24" fill="none" stroke="#c9a84c" stroke-width="2.2" stroke-linejoin="miter" stroke-linecap="square"></path>
+  <path d="M 176,46 L 164,46 L 164,36 L 154,36 L 154,24" fill="none" stroke="#c9a84c" stroke-width="2.2" stroke-linejoin="miter" stroke-linecap="square"></path>
+
+  
+  <path d="M 24,222 L 24,256 L 58,256" fill="none" stroke="#c9a84c" stroke-width="2.2" stroke-linejoin="miter" stroke-linecap="square"></path>
+  <path d="M 24,234 L 36,234 L 36,244 L 46,244 L 46,256" fill="none" stroke="#c9a84c" stroke-width="2.2" stroke-linejoin="miter" stroke-linecap="square"></path>
+
+  
+  <path d="M 176,222 L 176,256 L 142,256" fill="none" stroke="#c9a84c" stroke-width="2.2" stroke-linejoin="miter" stroke-linecap="square"></path>
+  <path d="M 176,234 L 164,234 L 164,244 L 154,244 L 154,256" fill="none" stroke="#c9a84c" stroke-width="2.2" stroke-linejoin="miter" stroke-linecap="square"></path>
+
+</svg>

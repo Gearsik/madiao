@@ -1,4 +1,4 @@
-import { userState, useState } from 'react';
+import { useState } from 'react';
 import JoinScreen from './components/lobby/JoinScreen';
 import LobbyRoom from './components/lobby/LobbyRoom';
 import GameTable from './components/game/GameTable';
@@ -19,6 +19,12 @@ function App(){
         setScreen('game');
     }
 
+    function handleMainMenu(){
+        setGameData(null);
+        setLobbyData(null);
+        setScreen('join');
+    }
+
     return(
         <div className="App">
             {screen === 'join' && (
@@ -26,13 +32,16 @@ function App(){
             )}
             {screen === 'lobby' && (
                 <LobbyRoom
-                lobbyData={lobbyData}
-                onGameStarted={handleGamesStarted}/>
+                    lobbyData={lobbyData}
+                    onGameStarted={handleGamesStarted}
+                    />
             )}
             {screen === 'game' &&(
                 <GameTable
-                initialGameData={gameData}
-                lobbyData={lobbyData}/>
+                    initialGameData={gameData}
+                    lobbyData={lobbyData}
+                    onMainMenu={handleMainMenu}
+                />
             )}
         </div>
     );

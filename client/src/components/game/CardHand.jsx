@@ -1,38 +1,88 @@
 import './CardHand.css';
 
-// displays the player's hand of cards in a fan/stack layout
-// cards are pre-sorted before being passed in — wilds left, numbers descending right
-function CardHand({ cards, selectedCards, onCardClick, isMyTurn, phase, playingCards }) {
-    const total = cards.length;
+//shows the cards this player still has in their hand
+//duplicate cards are stacked together, while GameTable decides the order before they arrive here
+function CardHand({ cards = [], onCardClick }) {
+
+    //group matching cards together so copies of the same number or wild card sit in one stack
+    const stacks =  [];
+    const stackIndexes = new Map();
+
+    cards.forEach(card => {
+        const stackKey = card.type === 'wild'
+        ? `wild-${card.wildType ?? 0}`
+        : `num-${card.value}`;
+
+        if(!stackIndexes.has(stackKey)){
+            stackIndexes.set(stackKey, stacks.length);
+            stacks.push({stackKey, cards: []});
+        }
+        stacks[stackIndexes.get(stackKey)].cards.push(card);
+    });
 
     return (
         <div className="card-hand">
-            {cards.map((card, index) => {
-                const isSelected = selectedCards.includes(card.id);
-                const isWild = card.type === 'wild';
-                const isInactive = !isMyTurn || (phase !== 'waiting' && phase !== 'challenge_open');
+            {stacks.map(({stackKey, cards: stackCards}, stackIndex) => {
+                const copyCount = stackCards.length;
 
-                // fan layout: each card shifts slightly to the right based on its position
-                // cards overlap so only a sliver of each one peeks out behind the next
-                const peekWidth = 28;   // how many pixels of each card are visible
-                const leftOffset = index * peekWidth;
+                //the container grows slightly for every extra copy so none of the stacked cards get cut off
+                const stackHeight = `
+                    calc(
+                        var(--my-card-h) + 
+                        ${(copyCount - 1)} * var(--hand-stack-offset)
+                        )
+                    `;
 
-                return (
-                    <div
-                        key={card.id}
-                        className={`
-                            card
-                            ${isWild ? 'card--wild' : ''}
-                            ${isSelected ? 'card--selected' : ''}
-                            ${isInactive ? 'card--inactive' : ''}
-                            ${isSelected && playingCards ? 'card--playing' : ''}
-                        `}
-                        style={{ left: `${leftOffset}px` }}  // absolute position creates the fan
-                        onClick={() => !isInactive && onCardClick(card.id)}
+                return(
+                    <div 
+                        key={stackKey} 
+                        className='card-stack' 
+                        style={{
+                            height: stackHeight, 
+                            zIndex: stackIndex + 1
+                        }}
                     >
-                        <span className="card-value">
-                            {isWild ? 'W' : card.value}
-                        </span>
+                        {stackCards.map((card, copyIndex) => {
+
+                            return(
+                                <div
+                                    key={card.id}
+                                    className='card'
+                                    style={{
+                                        //each copy sits stackOffset px higher than the one below
+                                        //copy 0 is at the bottom, copy N-1 is at the top
+                                        bottom:`
+                                            calc(
+                                                ${copyCount - 1 -copyIndex}
+                                                * var(--hand-stack-offset)
+                                            )
+                                        `,
+                                        //later copies sit in front visually
+                                        zIndex: copyIndex + 1,
+                                    }}
+                                    onClick={() => onCardClick(card.id)}
+                                >
+                                <img
+                                    src={card.type === 'wild'
+                                        ? `/assets/cards/wild-${card.wildType ?? 0}.svg`
+                                        : `/assets/cards/card-template.svg`
+                                    }
+                                    style={{
+                                            position: 'absolute',
+                                            inset: 0,
+                                            width: '100%',
+                                            height: '100%',
+                                    }}
+                                    alt=''
+                                />
+                                    {card.type !== 'wild' && (
+                                        <span className='card-value'>
+                                            {card.value}
+                                        </span>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 );
             })}

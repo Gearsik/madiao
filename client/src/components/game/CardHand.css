@@ -1,92 +1,120 @@
-/* card hand container — uses relative positioning so cards can fan absolutely */
+/* hand layout */
 .card-hand {
-    position: relative;
-    height: 100px;                      /* height of a card */
-    width: 100%;
+    --hand-stack-offset: 16px;
+
+    height: var(--my-card-visible-h);
+
     display: flex;
     align-items: flex-end;
-    justify-content: center;
+
+    padding-bottom: 8px;
+
+    pointer-events: none;
 }
+
+/* matching cards overlap horizontally as one stack */
+.card-stack {
+    position: relative;
+
+    width: var(--my-card-w);
+
+    flex-shrink: 0;
+
+    margin-right: calc(var(--my-card-w) * -0.35);
+
+    pointer-events: none;
+}
+
+.card-stack:last-child {
+    margin-right: 0;
+}
+
 
 /* individual card */
 .card {
     position: absolute;
-    width: 64px;
-    height: 92px;
-    background: #1e2d4a;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 8px;
+
+    width: var(--my-card-w);
+    height: var(--my-card-h);
+
     display: flex;
     align-items: center;
     justify-content: center;
+
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
+
+    transform: translateY(40%);
+
     cursor: pointer;
-    transition: transform 0.15s ease, border-color 0.15s, box-shadow 0.15s;
     user-select: none;
-    bottom: 0;
+
+    pointer-events: all;
+
+    transition: transform 0.15s ease;
 }
 
-/* hover lifts the card slightly */
-.card:hover:not(.card--inactive) {
-    transform: translateY(-12px);
-    z-index: 10;
+.card:hover {
+    transform: translateY(calc(30% - 10px)) !important;
+    z-index: 25;
 }
 
-/* selected card lifts higher and gets a gold border */
-.card--selected {
-    transform: translateY(-20px);
-    border-color: #c9a84c;
-    box-shadow: 0 0 12px rgba(201, 168, 76, 0.4);
-    z-index: 20;
-}
 
-/* wild cards get a purple theme */
-.card--wild {
-    background: #2d1a4a;
-    border-color: rgba(147, 51, 234, 0.4);
-}
-
-.card--wild.card--selected {
-    border-color: #9333ea;
-    box-shadow: 0 0 12px rgba(147, 51, 234, 0.5);
-}
-
-/* inactive cards can't be interacted with */
-.card--inactive {
-    cursor: default;
-    opacity: 0.65;
-}
-
-.card--inactive:hover {
-    transform: none;
-}
-
-/* playing animation — selected cards fly upward and fade out */
-.card--playing {
-    animation: cardPlay 0.6s ease-in forwards;
-}
-
-@keyframes cardPlay {
-    0% {
-        transform: translateY(-20px);
-        opacity: 1;
-    }
-    60% {
-        opacity: 1;
-    }
-    100% {
-        transform: translateY(-120px);
-        opacity: 0;
-    }
-}
-
-/* card value number */
+/* number printed over the card artwork */
 .card-value {
-    font-size: 1.4rem;
+    position: relative;
+
+    z-index: 1;
+
+    padding-bottom: 110%;
+
+    font-size: clamp(1.4rem, 2.2vw, 2.8rem);
     font-weight: 700;
-    color: #e0e0e0;
-    pointer-events: none;   /* so clicks pass through to the card div */
+    line-height: 1;
+
+    color: var(--ink);
+
+    pointer-events: none;
 }
 
-.card--wild .card-value {
-    color: #9333ea;
+
+/* mobile landscape */
+@media
+(max-height: 520px)
+and
+(orientation: landscape) {
+
+    .card-hand {
+        --hand-stack-offset: 6px;
+
+        padding-bottom: 0;
+    }
+
+    /* different card types overlap more so larger hands still fit on-screen */
+    .card-stack {
+        margin-right: calc(var(--my-card-w) * -0.46);
+    }
+
+    .card {
+        transform: translateY(56%);
+    }
+
+    .card-value {
+        font-size: clamp(0.72rem, 3.3dvh, 1rem);
+    }
+}
+
+
+/* touch screens can leave :hover active after tapping, so keep the card in its normal position */
+@media
+(hover: none)
+and
+(pointer: coarse)
+and
+(max-height: 520px)
+and
+(orientation: landscape) {
+
+    .card:hover {
+        transform: translateY(56%) !important;
+    }
 }

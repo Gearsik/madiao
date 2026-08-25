@@ -1,0 +1,667 @@
+/* player frame */
+.player-name {
+    width: 82%;
+    max-width: 82%;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    font-family: Georgia, serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+
+    color: var(--txt-primary);
+
+    letter-spacing: 0.5px;
+    text-align: center;
+}
+
+.player-frame--out {
+    opacity: 0.35;
+}
+
+
+/* player layout and temporary activity */
+.player-layout {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+}
+
+.player-frame--top-right .player-layout,
+.player-frame--mid-right .player-layout {
+    flex-direction: row-reverse;
+}
+
+.player-activity {
+    --opp-card-w: calc(var(--pending-card-w) * 0.40);
+    --opp-card-h: calc(var(--opp-card-w) * 3);
+
+    width: max-content;
+    min-width: 0;
+
+    flex: 0 0 auto;
+
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+
+    gap: 4px;
+    padding-top: 14px;
+}
+
+/* status and pending cards always grow away from the avatar */
+.player-activity .player-status-slot,
+.player-activity .player-pending-zone {
+    align-self: flex-start;
+}
+
+.player-activity .player-pending-zone {
+    margin: 0;
+}
+
+.player-frame--top-right .player-activity,
+.player-frame--mid-right .player-activity {
+    align-items: flex-end;
+}
+
+.player-frame--top-right .player-activity .player-status-slot,
+.player-frame--top-right .player-activity .player-pending-zone,
+.player-frame--mid-right .player-activity .player-status-slot,
+.player-frame--mid-right .player-activity .player-pending-zone {
+    align-self: flex-end;
+}
+
+.player-activity .pending-row {
+    gap: 2px;
+}
+
+
+/* permanent player information */
+.player-hud-row {
+    display: grid;
+
+    grid-template-areas:
+        "cards avatar"
+        "cups  cups";
+
+    grid-template-columns:
+        auto
+        var(--avatar-w);
+
+    grid-template-rows:
+        auto
+        auto;
+
+    column-gap: 10px;
+    row-gap: 4px;
+
+    align-items: center;
+}
+
+.player-frame--top-right .player-hud-row,
+.player-frame--mid-right .player-hud-row {
+    grid-template-areas:
+        "avatar cards"
+        "cups   cups";
+
+    grid-template-columns:
+        var(--avatar-w)
+        auto;
+}
+
+
+/* avatar */
+.player-avatar {
+    grid-area: avatar;
+
+    position: relative;
+
+    width: var(--avatar-w);
+    height: calc(var(--avatar-w) * 1.325);
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    overflow: hidden;
+
+    border-radius: 6px;
+}
+
+.player-avatar-frame {
+    position: absolute;
+    top: calc(var(--avatar-w) * -0.24);
+    left: 50%;
+
+    width: calc(var(--avatar-w) * 1.25);
+    height: auto;
+
+    transform: translateX(-50%);
+}
+
+/* temporary X until proper player avatars are added */
+.avatar-x {
+    position: relative;
+
+    width: 50%;
+    height: 50%;
+
+    opacity: 0.35;
+}
+
+.avatar-x::before,
+.avatar-x::after {
+    content: '';
+
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+
+    height: 2px;
+
+    background: var(--parchment);
+
+    border-radius: 1px;
+}
+
+.avatar-x::before {
+    transform:
+        translateY(-50%)
+        rotate(45deg);
+}
+
+.avatar-x::after {
+    transform:
+        translateY(-50%)
+        rotate(-45deg);
+}
+
+.avatar-disconnected {
+    position: absolute;
+    inset: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(0, 0, 0, 0.55);
+
+    font-family: Georgia, serif;
+    font-size: 0.6rem;
+
+    color: rgba(232, 223, 200, 0.6);
+
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.player-name {
+    font-family: Georgia, serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+
+    color: var(--txt-primary);
+
+    white-space: nowrap;
+
+    letter-spacing: 0.5px;
+    text-align: center;
+}
+
+
+/* card count */
+.player-card-count {
+    grid-area: cards;
+
+    width: var(--badge-w);
+    height: var(--badge-h);
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    gap: 2px;
+
+    margin-right: -6px;
+
+    background: #333333;
+
+    border: 1.5px solid var(--ui-border);
+    border-radius: 6px;
+}
+
+.player-frame--top-right .player-card-count,
+.player-frame--mid-right .player-card-count {
+    margin-right: 0;
+    margin-left: -6px;
+}
+
+.card-count-number {
+    font-size: 1.4rem;
+    font-weight: 700;
+    line-height: 1;
+
+    color: var(--txt-primary);
+}
+
+.card-count-label {
+    font-size: 0.5rem;
+
+    color: var(--txt-dim);
+
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+
+
+/* drinking cups */
+.player-drunkness {
+    grid-area: cups;
+
+    width: 100%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    justify-self: center;
+
+    font-size: 0.75rem;
+    font-weight: 600;
+
+    color: var(--txt-dim);
+
+    letter-spacing: 0.5px;
+    line-height: 8px;
+}
+
+.sake-cups {
+    width:
+        calc(
+            var(--avatar-w) +
+            var(--badge-w) * 0.7
+        );
+
+    max-width: none;
+    height: auto;
+
+    display: block;
+}
+
+/* each drunkness level drains one more cup in the SVG */
+.drain-rect {
+    transition:
+        y 2.4s
+        cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.drunkness-1 .drain-rect-3 {
+    y: 47px;
+}
+
+.drunkness-2 .drain-rect-3,
+.drunkness-2 .drain-rect-2 {
+    y: 47px;
+}
+
+.drunkness-3 .drain-rect-3,
+.drunkness-3 .drain-rect-2,
+.drunkness-3 .drain-rect-1 {
+    y: 47px;
+}
+
+.drunkness-4 .drain-rect {
+    y: 47px;
+}
+
+
+/* status bubble */
+.player-status-slot {
+    min-height: 32px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.player-status {
+    position: relative;
+
+    min-width: 66px;
+    min-height: 30px;
+
+    padding: 6px 11px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 4px;
+
+    background: #333333;
+
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+
+    color: var(--txt-primary);
+
+    white-space: nowrap;
+
+    font-family: Georgia, serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+
+    animation: playerStatusIn 180ms ease-out both;
+}
+
+/* speech bubble tail points back towards the avatar */
+.player-status::before {
+    content: '';
+
+    position: absolute;
+    left: -6px;
+    top: 50%;
+
+    width: 10px;
+    height: 10px;
+
+    background: #333333;
+
+    border-left: 1px solid rgba(255, 255, 255, 0.12);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+
+    transform:
+        translateY(-50%)
+        rotate(45deg);
+}
+
+.player-frame--top-right .player-status::before,
+.player-frame--mid-right .player-status::before {
+    left: auto;
+    right: -6px;
+
+    border-left: none;
+    border-bottom: none;
+
+    border-right: 1px solid rgba(255, 255, 255, 0.12);
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.player-status--declaration,
+.player-status--drinking {
+    border-color: rgba(201, 168, 76, 0.28);
+}
+
+.player-status--drinking {
+    color: var(--gold);
+}
+
+.player-status--timer {
+    min-width: 54px;
+}
+
+.player-status--urgent {
+    color: var(--red-bright);
+    border-color: rgba(224, 85, 85, 0.35);
+}
+
+.player-status--thinking {
+    min-width: 58px;
+}
+
+@keyframes playerStatusIn {
+    from {
+        opacity: 0;
+        transform: scale(0.92);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+
+/* thinking dots */
+.thinking-dot {
+    width: 8px;
+    height: 8px;
+
+    border-radius: 50%;
+
+    background: var(--gold);
+
+    animation:
+        thinkPulse
+        1.2s
+        ease-in-out
+        infinite;
+}
+
+.thinking-dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.thinking-dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes thinkPulse {
+    0%,
+    100% {
+        opacity: 0.4;
+
+        transform: scale(0.6);
+
+        background: var(--txt-dim);
+    }
+
+    50% {
+        opacity: 1;
+
+        transform: scale(1.2);
+
+        background: var(--gold);
+    }
+}
+
+
+/* local player's turn stamp */
+.your-turn-stamp {
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 6px);
+
+    z-index: 20;
+
+    padding: 9px 18px;
+
+    transform:
+        translateX(-50%)
+        rotate(-2deg);
+
+    background: transparent;
+
+    color: rgba(20, 20, 18, 0.9);
+
+    border: 2px dashed rgba(20, 20, 18, 0.9);
+    border-radius: 3px;
+
+    font-family: Georgia, serif;
+    font-size: clamp(0.93rem, 1.2vw, 1.23rem);
+    font-weight: 700;
+    line-height: 1;
+
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    white-space: nowrap;
+
+    box-shadow:
+        1px 1px 0 rgba(20, 20, 18, 0.12),
+        -1px 0 0 rgba(20, 20, 18, 0.08);
+
+    clip-path:
+        polygon(
+            2% 6%,
+            97% 1%,
+            100% 92%,
+            95% 100%,
+            3% 96%,
+            0% 12%
+        );
+
+    animation:
+        yourTurnDrop
+        320ms
+        cubic-bezier(0.22, 1.35, 0.48, 1)
+        both;
+}
+
+@keyframes yourTurnDrop {
+    from {
+        opacity: 0;
+
+        transform:
+            translateX(-50%)
+            translateY(-14px)
+            rotate(-5deg)
+            scale(0.88);
+    }
+
+    70% {
+        opacity: 1;
+
+        transform:
+            translateX(-50%)
+            translateY(2px)
+            rotate(-1deg)
+            scale(1.04);
+    }
+
+    to {
+        opacity: 1;
+
+        transform:
+            translateX(-50%)
+            translateY(0)
+            rotate(-2deg)
+            scale(1);
+    }
+}
+
+
+/* mobile landscape */
+@media
+(max-height: 520px)
+and
+(orientation: landscape) {
+
+    .player-layout {
+        gap: 6px;
+    }
+
+    .player-activity {
+        gap: 2px;
+        padding-top: 6px;
+    }
+
+    .player-hud-row {
+        column-gap: 4px;
+        row-gap: 2px;
+    }
+
+    .player-card-count {
+        margin-right: -2px;
+
+        border-width: 1px;
+        border-radius: 3px;
+    }
+
+    .player-frame--top-right .player-card-count,
+    .player-frame--mid-right .player-card-count {
+        margin-left: -2px;
+    }
+
+    .card-count-number {
+        font-size: clamp(0.70rem, 3.2dvh, 0.9rem);
+    }
+
+    .card-count-label {
+        font-size: clamp(0.26rem, 1.25dvh, 0.34rem);
+        letter-spacing: 0.6px;
+    }
+
+    .player-name {
+        font-size: clamp(0.42rem, 1.9dvh, 0.56rem);
+        letter-spacing: 0.15px;
+    }
+
+    .sake-cups {
+        width:
+            calc(
+                var(--avatar-w) +
+                var(--badge-w) * 0.5
+            );
+    }
+
+    .player-status-slot {
+        min-height: 21px;
+    }
+
+    .player-status {
+        min-width: 42px;
+        min-height: 21px;
+
+        padding: 3px 6px;
+
+        gap: 3px;
+
+        border-radius: 6px;
+
+        font-size: clamp(0.42rem, 1.8dvh, 0.53rem);
+    }
+
+    .player-status::before {
+        left: -4px;
+
+        width: 7px;
+        height: 7px;
+    }
+
+    .player-frame--top-right .player-status::before,
+    .player-frame--mid-right .player-status::before {
+        left: auto;
+        right: -4px;
+    }
+
+    .player-status--timer {
+        min-width: 34px;
+    }
+
+    .player-status--thinking {
+        min-width: 36px;
+    }
+
+    .thinking-dot {
+        width: 5px;
+        height: 5px;
+    }
+
+    .your-turn-stamp {
+        bottom: calc(100% + 3px);
+
+        padding: 4px 8px;
+
+        border-width: 1px;
+
+        font-size: clamp(0.46rem, 2dvh, 0.60rem);
+        letter-spacing: 0.09em;
+    }
+}

@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 62">
+  <defs>
+    <!-- cup shape clip paths — liquid stays within cup outline -->
+    <clipPath id="cupShape0">
+      <path d="M7,18 Q9,28 13,38 Q18,45 28,47 Q38,45 43,38 Q47,28 49,18 Q37,14 28,15 Q19,14 7,18 Z"/>
+    </clipPath>
+    <clipPath id="cupShape1">
+      <path d="M7,18 Q9,28 13,38 Q18,45 28,47 Q38,45 43,38 Q47,28 49,18 Q37,14 28,15 Q19,14 7,18 Z"/>
+    </clipPath>
+    <clipPath id="cupShape2">
+      <path d="M7,18 Q9,28 13,38 Q18,45 28,47 Q38,45 43,38 Q47,28 49,18 Q37,14 28,15 Q19,14 7,18 Z"/>
+    </clipPath>
+    <clipPath id="cupShape3">
+      <path d="M7,18 Q9,28  13,38 Q18,45 28,47 Q38,45 43,38 Q47,28 49,18 Q37,14 28,15 Q19,14 7,18 Z"/>
+    </clipPath>
+
+    <!-- drain clip paths — rect moves up to drain the liquid -->
+    <clipPath id="drain0">
+      <rect class="drain-rect drain-rect-0" x="-14" y="0" width="63" height="47"/>
+    </clipPath>
+    <clipPath id="drain1">
+      <rect class="drain-rect drain-rect-1" x="51" y="0" width="63" height="47"/>
+    </clipPath>
+    <clipPath id="drain2">
+      <rect class="drain-rect drain-rect-2" x="116" y="0" width="63" height="47"/>
+    </clipPath>
+    <clipPath id="drain3">
+      <rect class="drain-rect drain-rect-3" x="181" y="0" width="63" height="47"/>
+    </clipPath>
+  </defs>
+
+  <!-- cup 0 -->
+  <g transform="translate(14,6)">
+    <!-- liquid fill: clipped to cup shape AND drain rect -->
+
+    <g clip-path="url(#cupShape0)">
+      <rect class="drain-rect drain-rect-0" x="-14" y="0" width="63" height="47"
+        fill="rgba(196, 110, 130, 0.7)"/>
+    </g>
+          
+    <!-- cup outline -->
+    <path d="M7,18 Q9,28 13,38 Q18,45 28,47 Q38,45 43,38 Q47,28 49,18 Q37,14 28,15 Q19,14 7,18 Z" fill="rgba(20,10,5,.07)"/>
+    <path d="M7,18 Q7,12 10,9 Q19,3 28,4 Q37,3 46,9 Q49,12 49,18" stroke="#1a0c06" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M7,18 Q9,29 13,38 Q18,44 28,47" stroke="#1a0c06" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M49,18 Q47,29 43,38 Q38,44 28,47" stroke="#1a0c06" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M12,21 Q28,26 44,21" stroke="#1a0c06" stroke-width="3.8" fill="none" stroke-linecap="round"/>
+    <line x1="28" y1="47" x2="28" y2="51" stroke="#1a0c06" stroke-width="4" stroke-linecap="round"/>
+    <path d="M22,51 Q28,49.5 34,51" stroke="#1a0c06" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- cup 1 -->
+  <g transform="translate(79,6)">
+    <!-- liquid fill: clipped to cup shape AND drain rect -->
+
+    <g clip-path="url(#cupShape1)">
+      <rect class="drain-rect drain-rect-1" x="-14" y="0" width="63" height="47"
+        fill="rgba(196, 110, 130, 0.7)"/>
+   </g>
+    <!-- cup outline -->
+    <path d="M7,18 Q9,28 13,38 Q18,45 28,47 Q38,45 43,38 Q47,28 49,18 Q37,14 28,15 Q19,14 7,18 Z" fill="rgba(20,10,5,.07)"/>
+    <path d="M7,18 Q7,12 10,9 Q19,3 28,4 Q37,3 46,9 Q49,12 49,18" stroke="#1a0c06" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M7,18 Q9,29 13,38 Q18,44 28,47" stroke="#1a0c06" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M49,18 Q47,29 43,38 Q38,44 28,47" stroke="#1a0c06" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M12,21 Q28,26 44,21" stroke="#1a0c06" stroke-width="3.8" fill="none" stroke-linecap="round"/>
+    <line x1="28" y1="47" x2="28" y2="51" stroke="#1a0c06" stroke-width="4" stroke-linecap="round"/>
+    <path d="M22,51 Q28,49.5 34,51" stroke="#1a0c06" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- cup 2 -->
+  <g transform="translate(144,6)">
+    <!-- liquid fill: clipped to cup shape AND drain rect -->
+
+    <g clip-path="url(#cupShape2)">
+      <rect class="drain-rect drain-rect-2" x="-14" y="0" width="63" height="47"
+        fill="rgba(196, 110, 130, 0.7)"/>
+   </g>
+    <!-- cup outline -->
+    <path d="M7,18 Q9,28 13,38 Q18,45 28,47 Q38,45 43,38 Q47,28 49,18 Q37,14 28,15 Q19,14 7,18 Z" fill="rgba(20,10,5,.07)"/>
+    <path d="M7,18 Q7,12 10,9 Q19,3 28,4 Q37,3 46,9 Q49,12 49,18" stroke="#1a0c06" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M7,18 Q9,29 13,38 Q18,44 28,47" stroke="#1a0c06" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M49,18 Q47,29 43,38 Q38,44 28,47" stroke="#1a0c06" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M12,21 Q28,26 44,21" stroke="#1a0c06" stroke-width="3.8" fill="none" stroke-linecap="round"/>
+    <line x1="28" y1="47" x2="28" y2="51" stroke="#1a0c06" stroke-width="4" stroke-linecap="round"/>
+    <path d="M22,51 Q28,49.5 34,51" stroke="#1a0c06" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- cup 3 -->
+  <g transform="translate(209,6)">
+    <!-- liquid fill: clipped to cup shape AND drain rect -->
+
+    <g clip-path="url(#cupShape3)">
+      <rect class="drain-rect drain-rect-3" x="-14" y="0" width="63" height="47"
+        fill="rgba(196, 110, 130, 0.7)"/>
+   </g>
+    <!-- cup outline -->
+    <path d="M7,18 Q9,28 13,38 Q18,45 28,47 Q38,45 43,38 Q47,28 49,18 Q37,14 28,15 Q19,14 7,18 Z" fill="rgba(20,10,5,.07)"/>
+    <path d="M7,18 Q7,12 10,9 Q19,3 28,4 Q37,3 46,9 Q49,12 49,18" stroke="#1a0c06" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M7,18 Q9,29 13,38 Q18,44 28,47" stroke="#1a0c06" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M49,18 Q47,29 43,38 Q38,44 28,47" stroke="#1a0c06" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M12,21 Q28,26 44,21" stroke="#1a0c06" stroke-width="3.8" fill="none" stroke-linecap="round"/>
+    <line x1="28" y1="47" x2="28" y2="51" stroke="#1a0c06" stroke-width="4" stroke-linecap="round"/>
+    <path d="M22,51 Q28,49.5 34,51" stroke="#1a0c06" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+  </g>
+</svg>

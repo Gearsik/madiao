@@ -1,0 +1,305 @@
+/* overlay */
+.declare-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(0, 0, 0, 0.30);
+    animation: declareOverlayIn 180ms ease-out both;
+}
+
+@keyframes declareOverlayIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+
+/* declare panel */
+.declare-modal {
+    position: relative;
+    width: min(76vw, 920px);
+    padding: 26px clamp(42px, 6vw, 82px) 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: linear-gradient(90deg, transparent 0%, rgba(17, 21, 18, 0.72) 4%, rgba(17, 21, 18, 0.96) 13%, rgba(17, 21, 18, 0.96) 87%, rgba(17, 21, 18, 0.72) 96%, transparent 100%);
+    animation: declarePanelIn 280ms cubic-bezier(0.22, 0.85, 0.32, 1) both;
+}
+
+.declare-modal::before, .declare-modal::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    width: 88%;
+    height: 1px;
+    transform: translateX(-50%);
+    background: linear-gradient(90deg, transparent, rgba(201, 168, 76, 0.22) 18%, rgba(201, 168, 76, 0.38) 50%, rgba(201, 168, 76, 0.22) 82%, transparent);
+}
+
+.declare-modal::before {
+    top: 0;
+}
+
+.declare-modal::after {
+    bottom: 0;
+}
+
+@keyframes declarePanelIn {
+    from {
+        opacity: 0;
+        transform: translateY(16px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+
+/* heading */
+.declare-heading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    text-align: center;
+}
+
+.declare-title {
+    margin: 0;
+    font-family: Georgia, serif;
+    font-size: clamp(1.2rem, 2vw, 1.8rem);
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--txt-primary);
+    text-shadow: 0 3px 12px rgba(0, 0, 0, 0.45);
+}
+
+.declare-subtitle {
+    margin: 0;
+    font-family: Georgia, serif;
+    font-size: clamp(0.78rem, 1.05vw, 0.95rem);
+    color: rgba(232, 223, 200, 0.58);
+}
+
+.declare-subtitle strong {
+    color: var(--gold);
+    font-weight: 700;
+}
+
+.declare-subtitle-separator {
+    display: inline-block;
+    margin: 0 8px;
+    color: rgba(232, 223, 200, 0.28);
+}
+
+.declare-selected-number-text {
+    margin-left: 5px;
+}
+
+
+/* divider */
+.declare-divider {
+    width: min(48vw, 600px);
+    height: 1px;
+    margin: 19px 0 21px;
+    background: linear-gradient(90deg, transparent, rgba(201, 168, 76, 0.22) 12%, rgba(201, 168, 76, 0.68) 50%, rgba(201, 168, 76, 0.22) 88%, transparent);
+    transform-origin: center;
+    animation: declareDividerIn 420ms ease-out 80ms both;
+}
+
+@keyframes declareDividerIn {
+    from {
+        opacity: 0;
+        transform: scaleX(0);
+    }
+    to {
+        opacity: 1;
+        transform: scaleX(1);
+    }
+}
+
+
+/* number grid */
+.declare-numbers,
+.declare-actions {
+    width: min(54vw, 620px);
+}
+
+.declare-numbers {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+    margin: 0 auto;
+}
+
+
+/* number buttons */
+.declare-number {
+    position: relative;
+    height: clamp(40px, 5.2vh, 52px);
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #111512;
+    border: 1px solid #070907;
+    border-radius: 5px;
+    box-shadow: inset 0 0 0 2px rgba(242, 237, 230, 0.72), inset 0 0 0 3px #111512, 0 3px 7px rgba(0, 0, 0, 0.28);
+    font-family: Georgia, serif;
+    font-size: clamp(0.95rem, 1.45vw, 1.25rem);
+    font-weight: 700;
+    color: rgba(242, 237, 230, 0.86);
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(7px);
+    animation: declareNumberIn 220ms ease-out forwards;
+    animation-delay: calc(100ms + (var(--declare-index) * 24ms));
+    transition: transform 140ms ease, color 140ms ease, box-shadow 140ms ease, background 140ms ease;
+}
+
+@keyframes declareNumberIn {
+    from {
+        opacity: 0;
+        transform: translateY(7px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.declare-number:hover {
+    transform: translateY(-1px);
+    color: #ffffff;
+    box-shadow: inset 0 0 0 2px rgba(242, 237, 230, 0.90), inset 0 0 0 3px #111512, 0 4px 9px rgba(0, 0, 0, 0.34);
+}
+
+.declare-number--selected {
+    transform: translateY(-2px);
+    color: var(--gold);
+    background: #151913;
+    box-shadow: inset 0 0 0 2px rgba(201, 168, 76, 0.92), inset 0 0 0 3px #111512, 0 0 10px rgba(201, 168, 76, 0.22), 0 5px 10px rgba(0, 0, 0, 0.36);
+}
+
+.declare-number--selected:hover {
+    transform: translateY(-2px);
+}
+
+
+/* actions */
+.declare-actions {
+    margin-top: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+}
+
+
+/* cancel button */
+.declare-cancel {
+    height: 38px;
+    padding: 0 24px;
+    border: 1px solid rgba(242, 237, 230, 0.12);
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.045);
+    font-family: Georgia, serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: rgba(232, 223, 200, 0.52);
+    cursor: pointer;
+    transition: background 150ms ease, color 150ms ease, transform 150ms ease;
+}
+
+.declare-cancel:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(232, 223, 200, 0.82);
+    transform: translateY(-1px);
+}
+
+
+/* confirm button */
+.declare-confirm {
+    min-width: 230px;
+    height: 42px;
+    padding: 0 24px;
+    border: 1px solid #070907;
+    border-radius: 5px;
+    background: #111512;
+    box-shadow: inset 0 0 0 1px #f2ede6, inset 0 0 0 4px #111512, 0 4px 10px rgba(0, 0, 0, 0.34);
+    font-family: Georgia, serif;
+    font-size: clamp(0.74rem, 1vw, 0.9rem);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--gold);
+    cursor: pointer;
+    transition: transform 150ms ease, box-shadow 150ms ease, opacity 150ms ease;
+}
+
+.declare-confirm:not(:disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: inset 0 0 0 1px #f2ede6, inset 0 0 0 4px #111512, 0 5px 13px rgba(0, 0, 0, 0.40), 0 0 9px rgba(201, 168, 76, 0.18);
+}
+
+.declare-confirm:not(:disabled):active {
+    transform: translateY(1px) scale(0.99);
+}
+
+.declare-confirm:disabled {
+    opacity: 0.32;
+    cursor: not-allowed;
+    color: rgba(232, 223, 200, 0.38);
+    box-shadow: inset 0 0 0 3px rgba(242, 237, 230, 0.42), inset 0 0 0 4px #111512;
+}
+
+
+/* keyboard focus */
+.declare-number:focus-visible, .declare-cancel:focus-visible, .declare-confirm:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 3px;
+}
+
+
+/* short landscape screens */
+@media (max-height: 600px) and (orientation: landscape) {
+    .declare-modal {
+        width: min(82vw, 880px);
+        padding: 18px 52px 20px;
+    }
+
+    .declare-title {
+        font-size: clamp(1rem, 2vw, 1.35rem);
+    }
+
+    .declare-divider {
+        margin: 11px 0 13px;
+    }
+
+    .declare-number {
+        height: 34px;
+    }
+
+    .declare-actions {
+        margin-top: 13px;
+    }
+
+    .declare-confirm {
+        height: 36px;
+    }
+
+    .declare-cancel {
+        height: 34px;
+    }
+}

@@ -1,0 +1,149 @@
+/* pending card rows */
+.player-pending-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    pointer-events: none;
+}
+
+.pending-rows {
+    display: flex;
+    flex-direction: column;
+
+    gap: 2px;
+}
+
+.pending-row {
+    display: flex;
+    align-items: flex-end;
+
+    gap: 3px;
+}
+
+
+/* each stack contains copies of the same card */
+.pending-stack {
+    position: relative;
+
+    width: var(--opp-card-w);
+    height: var(--opp-card-h);
+
+    flex-shrink: 0;
+}
+
+.my-pending-zone .pending-stack {
+    width: var(--pending-card-w);
+    height: var(--pending-card-h);
+}
+
+
+/* individual pending card */
+.pending-card {
+    position: absolute;
+
+    width: var(--opp-card-w);
+    height: var(--opp-card-h);
+
+    border-radius: 4px;
+
+    pointer-events: all;
+
+    animation: pendingCardArrive 0.4s ease-out both;
+}
+
+.my-pending-zone .pending-card {
+    width: var(--pending-card-w);
+    height: var(--pending-card-h);
+
+    border-radius: 5px;
+}
+
+
+/* opponent cards stay face down */
+.pending-card--facedown {
+    background:
+        linear-gradient(
+            160deg,
+            #1a2a1a 0%,
+            #0d150d 100%
+        );
+}
+
+.pending-card--facedown::before {
+    content: '';
+
+    position: absolute;
+    inset: 3px;
+
+    border: 1px solid rgba(201, 168, 76, 0.1);
+    border-radius: 2px;
+}
+
+
+/* number shown over our own face-up card artwork */
+.pending-card-value {
+    position: absolute;
+    inset: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding-bottom: 125%;
+
+    font-size: clamp(0.5rem, 0.9vw, 0.75rem);
+    font-weight: 700;
+
+    color: var(--ink);
+
+    pointer-events: none;
+}
+
+
+/* our own pending cards lift slightly when they can be clicked back into the hand */
+.my-pending-zone .pending-card--clickable {
+    cursor: pointer;
+}
+
+.my-pending-zone .pending-card--clickable:hover {
+    transform: translateY(-3%) !important;
+}
+
+
+@keyframes pendingCardArrive {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+/* submitted cards briefly lift and fade before leaving the pending zone */
+.pending-card--submitting {
+    pointer-events: none;
+
+    animation: pendingCardCommit 600ms ease-out both;
+}
+
+@keyframes pendingCardCommit {
+    0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    45% {
+        opacity: 1;
+        transform: translateY(-12px) scale(1.04);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(-24px) scale(0.96);
+    }
+}

@@ -1,0 +1,129 @@
+/* pile layout */
+.pile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    gap: 1vh;
+}
+
+/* the filled and empty pile use the same card size */
+.pile-cards,
+.pile-empty {
+    width: var(--pile-card-w, var(--opp-card-w));
+    height: var(--pile-card-h, var(--opp-card-h));
+}
+
+
+/* stacked face-down cards */
+.pile-cards {
+    position: relative;
+}
+
+.pile-layer {
+    position: absolute;
+    inset: 0;
+
+    background:
+        linear-gradient(
+            160deg,
+            #1a2a1a 0%,
+            #0d150d 100%
+        );
+
+    border: 1.5px solid rgba(201, 168, 76, 0.18);
+    border-radius: 5px;
+}
+
+.pile-layer::before {
+    content: '';
+
+    position: absolute;
+    inset: 4px;
+
+    border: 1px solid rgba(201, 168, 76, 0.1);
+    border-radius: 3px;
+}
+
+/* small rotations make the three layers look like a growing pile */
+.pile-layer:nth-child(1) {
+    opacity: 0.5;
+    transform: rotate(-4deg) translate(-2px, 2px);
+}
+
+.pile-layer:nth-child(2) {
+    opacity: 0.7;
+    transform: rotate(2deg) translate(1px, 1px);
+}
+
+.pile-layer:nth-child(3) {
+    opacity: 1;
+    transform: rotate(0deg);
+}
+
+
+/* pile count */
+.pile-count-badge {
+    position: absolute;
+    inset: 0;
+
+    z-index: 1;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: clamp(1rem, 2.2vw, 1.6rem);
+    font-weight: 700;
+
+    color: var(--gold);
+}
+
+
+/* empty pile */
+.pile-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1.5px dashed rgba(201, 168, 76, 0.3);
+    border-radius: 5px;
+
+    font-weight: 700;
+
+    color: var(--txt-dim);
+}
+
+
+/* label */
+.pile-label {
+    font-size: clamp(0.55rem, 0.9vw, 0.75rem);
+
+    color: var(--txt-dim);
+
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+
+/* mobile landscape */
+@media
+(max-height: 520px)
+and
+(orientation: landscape) {
+
+    .pile {
+        --pile-card-w: clamp(18px, 5.6dvh, 24px);
+        --pile-card-h: calc(var(--pile-card-w) * 3);
+
+        gap: 2px;
+    }
+
+    .pile-count-badge {
+        font-size: clamp(0.7rem, 3dvh, 0.95rem);
+    }
+
+    .pile-label {
+        font-size: 0.4rem;
+    }
+}
