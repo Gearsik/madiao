@@ -1,0 +1,231 @@
+/*
+ * Madiao documentation presentation layer.
+ *
+ * The aim here is not to redesign Material for MkDocs. These overrides only
+ * make the existing layout a little wider, calmer and easier to scan while
+ * keeping Material's normal responsive behaviour on smaller screens.
+ */
+
+
+/* -------------------------------------------------------------------------
+   Overall width
+   ------------------------------------------------------------------------- */
+
+/*
+ * Material deliberately keeps the default site fairly narrow for readable
+ * line lengths. Madiao has a large left navigation tree and a detailed page
+ * table of contents, so the desktop grid gets a little more breathing room.
+ */
+.md-grid {
+    max-width: 1440px;
+}
+
+
+/* -------------------------------------------------------------------------
+   Dark palette
+   ------------------------------------------------------------------------- */
+
+/*
+ * The built-in slate scheme still controls the full dark theme. Adjusting the
+ * hue keeps it slightly cooler without creating a completely custom palette.
+ */
+[data-md-color-scheme="slate"] {
+    --md-hue: 215;
+}
+
+
+/* -------------------------------------------------------------------------
+   Desktop sidebars
+   ------------------------------------------------------------------------- */
+
+@media screen and (min-width: 76.25em) {
+    /*
+     * Material's default secondary sidebar is quite narrow. A wider contents
+     * column means headings such as "Game State Is Stored in Memory" are much
+     * less likely to wrap onto a second line.
+     */
+    .md-sidebar--secondary {
+        width: 15.5rem;
+    }
+
+    /*
+     * Material can use the inner padding to absorb additional sidebar width.
+     * Keeping this small makes the extra width available to the actual TOC.
+     */
+    .md-sidebar--secondary .md-sidebar__inner {
+        padding-right: 0.6rem;
+    }
+
+    /*
+     * Give the article a little additional horizontal breathing room while
+     * leaving Material's mobile and tablet layout untouched.
+     */
+    .md-content__inner {
+        padding-left: 0.8rem;
+        padding-right: 0.8rem;
+    }
+}
+
+
+/* -------------------------------------------------------------------------
+   Typography and spacing
+   ------------------------------------------------------------------------- */
+
+.md-typeset {
+    line-height: 1.72;
+}
+
+.md-typeset h1 {
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    margin-bottom: 1.1em;
+}
+
+.md-typeset h2 {
+    font-weight: 650;
+    letter-spacing: -0.018em;
+    margin-top: 2.25em;
+    margin-bottom: 0.8em;
+}
+
+.md-typeset h3 {
+    font-weight: 650;
+    margin-top: 1.8em;
+    margin-bottom: 0.65em;
+}
+
+.md-typeset h4 {
+    font-weight: 650;
+    margin-top: 1.5em;
+}
+
+/*
+ * Long chapters are easier to scan when major sections are separated by
+ * whitespace rather than heavy boxes or thick rules.
+ */
+.md-typeset h2 + p,
+.md-typeset h3 + p {
+    margin-top: 0.45em;
+}
+
+.md-typeset p,
+.md-typeset ul,
+.md-typeset ol {
+    margin-bottom: 1em;
+}
+
+
+/* -------------------------------------------------------------------------
+   Left navigation and right-hand table of contents
+   ------------------------------------------------------------------------- */
+
+.md-nav__link {
+    transition:
+        color 120ms ease,
+        opacity 120ms ease;
+}
+
+.md-nav__link:hover {
+    color: var(--md-accent-fg-color);
+}
+
+/*
+ * Material already marks active links. The slightly stronger weight makes the
+ * current page/current heading easier to find without adding a large coloured
+ * block to the sidebar.
+ */
+.md-nav__link--active {
+    font-weight: 700;
+    color: var(--md-accent-fg-color);
+}
+
+/* Give TOC entries enough vertical separation to scan quickly. */
+.md-nav--secondary .md-nav__link {
+    line-height: 1.35;
+    margin-top: 0.28em;
+    margin-bottom: 0.28em;
+}
+
+
+/* -------------------------------------------------------------------------
+   Code
+   ------------------------------------------------------------------------- */
+
+/*
+ * Keep code visually distinct, but use a subtle border rather than a heavy
+ * card effect. Material still controls syntax colours for each palette.
+ */
+.md-typeset .highlight,
+.md-typeset pre {
+    border-radius: 0.25rem;
+}
+
+.md-typeset .highlight {
+    border: 1px solid var(--md-default-fg-color--lightest);
+    overflow: hidden;
+}
+
+.md-typeset code {
+    border-radius: 0.2rem;
+}
+
+/*
+ * Code block titles are available through syntax such as:
+ *
+ * ```yaml title="docker-compose.yml"
+ *
+ * Material supplies the title layout; this only gives it a slightly clearer
+ * separation from the code underneath.
+ */
+.md-typeset .filename {
+    font-weight: 600;
+    border-bottom: 1px solid var(--md-default-fg-color--lightest);
+}
+
+
+/* -------------------------------------------------------------------------
+   Tables and diagrams
+   ------------------------------------------------------------------------- */
+
+.md-typeset table:not([class]) {
+    border-radius: 0.4rem;
+}
+
+/*
+ * Mermaid diagrams already carry most of their own visual structure. Extra
+ * spacing keeps them from feeling glued to the paragraphs around them.
+ */
+.md-typeset .mermaid {
+    margin-top: 1.5rem;
+    margin-bottom: 1.7rem;
+}
+
+
+/* -------------------------------------------------------------------------
+   Admonitions
+   ------------------------------------------------------------------------- */
+
+/*
+ * Keep admonitions visually useful without making them dominate long pages.
+ */
+.md-typeset .admonition,
+.md-typeset details {
+    border-radius: 0.4rem;
+    box-shadow: none;
+}
+
+
+/* -------------------------------------------------------------------------
+   Smaller screens
+   ------------------------------------------------------------------------- */
+
+/*
+ * All sidebar-width changes above are desktop-only. Material keeps control of
+ * its normal drawer/TOC behaviour on tablets and phones.
+ */
+@media screen and (max-width: 76.24em) {
+    .md-content__inner {
+        padding-left: 0.8rem;
+        padding-right: 0.8rem;
+    }
+}
