@@ -117,8 +117,8 @@ describe('startGame', () => {
         it('starting player index is within bounds', () => {
             const lobbyPlayers = [
                 {id: 'player0', name: 'Senne'},
-                {id: 'player1', name: 'Tom'}
-                {id: 'player1', name: 'Karl'}
+                {id: 'player1', name: 'Tom'},
+                {id: 'player2', name: 'Karl'}
             ];
 
             const gameState = startGame(lobbyPlayers);
