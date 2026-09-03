@@ -1,10 +1,7 @@
 //deck test file
 const {describe, it} = require ('node:test');
 const assert = require ('node:assert/strict');
-const { isPlayHonest } = require ('./deck');
-const {deckBuilding} = require ('./deck');
-const {handSize} = require ('./state');
-const { type } = require('node:os');
+const {isPlayHonest, deckBuilding} = require('./deck');
 
 //testing isPlayHonest function
 describe('isPlayHonest', () => {
@@ -35,14 +32,6 @@ describe('isPlayHonest', () => {
             ];
             assert.strictEqual(isPlayHonest(cards, 3), true);
         });
-
-        it('return false if at least one of the cards dont match the declared number alongside a matching card', () => {
-            const cards = [
-                {type: 'number', value: 5},
-                {type: 'number', value: 3}
-            ];
-            assert.strictEqual(isPlayHonest(cards, 5), false);
-        });
     });
 
     //testing when the play is a bluff
@@ -54,6 +43,14 @@ describe('isPlayHonest', () => {
                 {type: 'number', value:3}
             ];
             assert.strictEqual(isPlayHonest(cards, 1), false);
+        });
+
+        it('return false if at least one of the cards dont match the declared number alongside a matching card', () => {
+            const cards = [
+                {type: 'number', value: 5},
+                {type: 'number', value: 3}
+            ];
+            assert.strictEqual(isPlayHonest(cards, 5), false);
         });
 
         it('return false when no cards match', () => {
@@ -84,6 +81,31 @@ describe('deckBuilding', () => {
         const deck = deckBuilding();
         const wildCards = deck.filter(card => card.type === 'wild');
         assert.strictEqual(wildCards.length, 16);
+    });
+
+    it('each number from 1 to 10 shows up exactly 4 times', () => {
+        const deck = deckBuilding();
+
+        for(let value = 1; value <= 10; value++){
+            const count = deck.filter(card => card.type === 'number' && card.value === value).length;
+            assert.strictEqual(count, 4, `expected 4 copies of ${value} but got ${count}`);
+        }
+    });
+
+    it('each wild card also appears 4 times', () => {
+        const deck = deckBuilding();
+
+        for(let type = 0; type < 4; type++){
+            const count = deck.filter(card => card.type === 'wild' && card.wildType === type).length;
+            assert.strictEqual(count, 4, `expected 4 copies of wild type ${type} but got ${count}`);
+        }
+    });
+
+    it('every cardID is unique', () => {
+        const deck = deckBuilding();
+        const ids = deck.map(card => card.id);
+        const uniqueIds = new Set(ids);
+        assert.strictEqual(uniqueIds.size, ids.length);
     });
 });
 

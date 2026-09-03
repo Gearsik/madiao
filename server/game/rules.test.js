@@ -1,6 +1,5 @@
 const {describe, it} = require ('node:test');
 const assert = require ('node:assert/strict');
-const { type } = require('node:os');
 const {applyDrink} = require('./rules');
 
 //test applyDrink function
@@ -8,7 +7,7 @@ describe('applyDrink', () => {
 
     describe('drunkness increase', () => {
 
-        it('increase drunkness level by 1 each time', () => {
+        it('increase drunkness level by 1', () => {
             const player = {drunkness: 0};
             const result = applyDrink(player, () => 1);
             assert.strictEqual(result.drunkness, 1);
@@ -37,7 +36,7 @@ describe('applyDrink', () => {
 
         it('always get eliminated on the 4th drink', () => {
             const player = {drunkness: 3};
-            const result = applyDrink(player, () => 0.99);   //you can never roll 1, so you always get eliminated on the 4th drink
+            const result = applyDrink(player, () => 0.99);
             assert.strictEqual(result.eliminated, true);
         });
     });
