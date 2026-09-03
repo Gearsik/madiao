@@ -7,7 +7,7 @@ services:
     container_name: madiao-server
 
     ports:
-      - "3001:3001"
+      - "127.0.0.1:3001:3001"
 
     environment:
       CLIENT_ORIGIN: ${CLIENT_ORIGIN}
@@ -24,7 +24,7 @@ services:
     container_name: madiao-client
 
     ports:
-      - "3000:80"
+      - "127.0.0.1:3000:80"
 
     restart: unless-stopped
 
@@ -36,6 +36,6 @@ services:
     container_name: madiao-docs
 
     ports:
-      - "3002:80"
+      - "127.0.0.1:3002:80"
     
     restart: unless-stopped
