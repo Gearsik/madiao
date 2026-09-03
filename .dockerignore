@@ -1,0 +1,11 @@
+.git
+.gitignore
+.env
+.env.*
+client
+server
+node_modules
+CHANGELOG.md
+RUNBOOK.md
+Madiao - Game Specification.md
+README.md
