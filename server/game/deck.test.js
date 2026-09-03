@@ -3,6 +3,7 @@ const {describe, it} = require ('node:test');
 const assert = require ('node:assert/strict');
 const { isPlayHonest } = require ('./deck');
 const {deckBuilding} = require ('./deck');
+const {handSize} = require ('./state');
 const { type } = require('node:os');
 
 //testing isPlayHonest function
