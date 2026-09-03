@@ -27,3 +27,15 @@ services:
       - "3000:80"
 
     restart: unless-stopped
+
+  docs:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    
+    container_name: madiao-docs
+
+    ports:
+      - "3002:80"
+    
+    restart: unless-stopped
