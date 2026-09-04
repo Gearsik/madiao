@@ -3,7 +3,7 @@
 The previous technical pages explain what Madiao is made out of and where its
 configuration comes from. The next useful step is putting those pieces together
 and going through what is required to get a completely fresh production copy of
-the game running.
+the game and its documentation running.
 
 This chapter is specifically about deploying Madiao for the first time on a
 server which has already been prepared for application hosting.
@@ -23,9 +23,9 @@ The general process is:
 flowchart TD
     Prepare["Prepare the server"]
     Clone["Clone the repository"]
-    Config["Check production configuration"]
+    Config["Create and check production configuration"]
     Validate["Validate Docker Compose"]
-    Build["Build the client and server images"]
+    Build["Build the production images"]
     Start["Start the containers"]
     Check["Check and test the deployment"]
 
@@ -46,22 +46,22 @@ been completed.
 The production machine does not need the same development setup as the computer
 used to write the game.
 
-In particular, Node.js and npm do not need to be installed directly on the
-server just for Madiao.
+In particular, Node.js, npm, Python and MkDocs do not need to be installed
+directly on the server just for Madiao.
 
-The Docker images already define the environments needed by both parts of the
-application.
+The Docker images already define the environments required by the client,
+server and documentation services.
 
 The production server mainly needs:
 
 | Requirement | Why it is needed |
 | --- | --- |
 | Git | Obtains and updates the project from the repository |
-| Docker Engine | Builds and runs the application containers |
-| Docker Compose plugin | Manages the client and server together |
+| Docker Engine | Builds and runs the production containers |
+| Docker Compose plugin | Manages the production services together |
 
-Node.js and npm do not need to be installed directly on the host just for
-Madiao because the Docker images provide those environments.
+The application dependencies are installed inside their respective Docker
+images rather than directly on the host.
 
 
 ### Checking Git
@@ -106,22 +106,30 @@ command.
 
 ### Network access
 
-The server also needs to allow incoming traffic to the ports used by Madiao.
+The server also needs to allow incoming traffic to the ports used by the base
+Madiao deployment.
 
-The current production setup exposes:
+At this stage the three services use:
 
 | Port | Purpose |
 | ---: | --- |
 | `3000` | React client served through nginx |
 | `3001` | Node.js / Socket.IO server |
+| `3002` | MkDocs documentation served through nginx |
 
 !!! warning "Running containers do not guarantee external access"
-    If ports `3000` or `3001` are blocked by the host firewall or the hosting
-    provider's firewall, the containers can be healthy while the application is
-    still unreachable from another computer.
+    If ports `3000`, `3001` or `3002` are blocked by the host firewall or the
+    hosting provider's firewall, the containers can be healthy while the
+    relevant service is still unreachable from another computer.
 
 This is therefore worth checking early rather than assuming every failed browser
 connection is a Docker problem.
+
+The ports used here describe the base deployment.
+
+The live server can later be placed behind HTTPS and a host-level reverse proxy.
+That is deliberately treated as a separate production-hardening stage rather
+than something required before the application has been tested.
 
 
 ## Cloning the Repository
@@ -158,28 +166,73 @@ changes because the production repository should stay as close to the Git
 version as possible.
 
 
-## Checking Production Configuration
+## Creating the Production Environment File
 
-Before building anything, the production addresses need to be correct.
+The live `.env` file is deliberately not tracked by Git.
 
-As covered in the previous chapter, there are two main values involved:
+Instead, the repository contains:
+
+```text
+.env.example
+```
+
+which shows the variables the production deployment expects.
+
+After cloning the repository, create the real environment file from that
+example:
+
+```bash
+cp .env.example .env
+```
+
+The new file can then be edited with:
+
+```bash
+nano .env
+```
+
+or another text editor.
+
+The two application-specific values are:
 
 | Value | What it controls |
 | --- | --- |
 | `REACT_APP_SERVER_URL` | Where the browser should connect for Socket.IO |
 | `CLIENT_ORIGIN` | Which browser origin the server is allowed to accept |
 
+For the base production deployment they should use the externally reachable
+server address.
+
+For example:
+
+```env title=".env"
+REACT_APP_SERVER_URL=http://<server-address>:3001
+CLIENT_ORIGIN=http://<server-address>:3000
+```
+
+These values are used differently.
+
+`REACT_APP_SERVER_URL` is passed into the React image while the client is being
+built.
+
+`CLIENT_ORIGIN` is passed into the Node.js container when the server runs.
+
+The documentation service does not need either variable because the generated
+MkDocs site does not communicate with the game server.
+
+The full distinction is explained in
+[Environment and Configuration](../technical/environment-configuration.md).
 
 
 ### Client production address
 
-The React production value is read from `client/.env.production`.
+The value:
 
-It should point to the externally reachable game server, for example:
-
-```env title="client/.env.production"
+```env
 REACT_APP_SERVER_URL=http://<server-address>:3001
 ```
+
+must point to an address which the player's browser can actually reach.
 
 !!! warning "Do not use localhost for the public client build"
     `REACT_APP_SERVER_URL` must contain an address the player's browser can
@@ -192,28 +245,29 @@ address.
 
 ### Server allowed origin
 
-The server receives `CLIENT_ORIGIN` through `docker-compose.yml`.
+The second value:
 
-The value should match the address from which players load the client, for
-example:
-
-```yaml
-environment:
-  CLIENT_ORIGIN: http://<client-address>:3000
+```env
+CLIENT_ORIGIN=http://<server-address>:3000
 ```
 
-For the current deployment both services are hosted on the same machine, but
-they still use different ports:
+should match the address from which players load the React client.
+
+For the base deployment, the client and server are hosted on the same machine,
+however, they still use different ports:
 
 ```mermaid
 flowchart TD
     Browser["Player's browser"]
-    Client["Client origin<br/>http://<server-address>:3000"]
-    Server["Game server<br/>http://<server-address>:3001"]
+    Client["Client origin<br/>http://server:3000"]
+    Server["Game server<br/>http://server:3001"]
 
     Browser -->|"Loads React from"| Client
     Browser -->|"Socket.IO connects to"| Server
 ```
+
+Docker Compose reads both values from the root `.env` file when the production
+configuration is resolved.
 
 
 ## Validating Docker Compose
@@ -227,7 +281,7 @@ docker compose config
 !!! tip "Validate before building"
     Run `docker compose config` after changing the Compose file or its
     configuration. It catches YAML and Compose-structure problems before time is
-    spent building either image.
+    spent building the images.
 
 This is one of the safest checks in the deployment process because it does not
 start or replace anything.
@@ -235,16 +289,30 @@ start or replace anything.
 It simply asks Docker Compose to read the configuration and show the final
 result it understands.
 
-A successful result should contain both services and the expected port
-mappings:
+A successful result should contain the three production services:
+
+```text
+server
+client
+docs
+```
+
+and the expected base port mappings:
 
 | Service | Expected mapping |
 | --- | --- |
 | `client` | `3000 -> 80` |
 | `server` | `3001 -> 3001` |
+| `docs` | `3002 -> 80` |
 
-It is also worth checking the resolved `CLIENT_ORIGIN` while looking through the
-output.
+It is also worth checking the resolved values for:
+
+```text
+REACT_APP_SERVER_URL
+CLIENT_ORIGIN
+```
+
+while looking through the output.
 
 If Docker Compose reports a YAML or configuration error here, fix that before
 continuing.
@@ -255,53 +323,70 @@ Docker already says is invalid.
 
 ## Building the Images
 
-Once the configuration looks correct, build both services:
+Once the configuration looks correct, build the production services:
 
 ```bash
 docker compose build
 ```
 
-Docker will build the client and server separately.
+Docker builds the client, server and documentation images separately.
 
 At a simplified level:
 
 ```mermaid
 flowchart TD
-    ClientSource["client/ + Dockerfile"]
-    ClientImage["madiao client image"]
-    ClientRuntime["React production build served by nginx"]
+    ClientSource["client/<br/>Dockerfile"]
+    ClientImage["Madiao client image"]
+    ClientRuntime["React production build<br/>served by nginx"]
 
-    ServerSource["server/ + Dockerfile"]
-    ServerImage["madiao server image"]
+    ServerSource["server/<br/>Dockerfile"]
+    ServerImage["Madiao server image"]
     ServerRuntime["Node.js application"]
+
+    DocsSource["docs/ + mkdocs.yaml<br/>root Dockerfile"]
+    DocsImage["Madiao docs image"]
+    DocsRuntime["Generated MkDocs site<br/>served by nginx"]
 
     ClientSource --> ClientImage --> ClientRuntime
     ServerSource --> ServerImage --> ServerRuntime
+    DocsSource --> DocsImage --> DocsRuntime
 ```
+
+The client and server use their own Dockerfiles inside their respective
+application folders.
+
+The documentation build is slightly different.
+
+Its Dockerfile lives at the project root because the build needs access to both:
+
+```text
+mkdocs.yaml
+docs/
+```
+
+MkDocs first converts the Markdown documentation into a static site. That site
+is then copied into an nginx image which becomes the documentation container.
 
 The first build may take longer than later ones because Docker has no previous
 layers cached yet.
 
-The client also has to install its npm dependencies and run the full React
-production build.
+The client also has to install its npm dependencies and run the React production
+build, while the documentation image needs to install MkDocs Material and build
+the documentation site.
 
-A successful build should finish without an npm, React or Docker error.
+A successful build should finish without an npm, React, MkDocs or Docker error.
 
 If one service fails, do not immediately move on to `docker compose up`.
 
 The failed image needs to be fixed first.
 
 If the build fails, [Build and Dependency Problems](build-problems.md) covers
-the main places worth checking. The most relevant sections are
-[`npm ci` Failure](build-problems.md#npm-ci-failure),
-[Docker Build Failure](build-problems.md#docker-build-failure) and
-[React Build Failure](build-problems.md#react-build-failure), depending on which
-build step actually failed.
+the main places worth checking.
 
 
 ## Starting the Containers
 
-Once both images have built successfully, start the application with:
+Once the images have built successfully, start the deployment with:
 
 ```bash
 docker compose up -d
@@ -319,22 +404,33 @@ Without it, the terminal stays attached to the container output.
 With it, Docker starts the services in the background and returns control of the
 terminal.
 
-The expected containers are `madiao-client` and `madiao-server`.
+The expected containers are:
 
-The current Compose setup also uses `restart: unless-stopped`, which means
-Docker will normally try to bring the containers back after a host restart
-unless they were deliberately stopped.
+```text
+madiao-client
+madiao-server
+madiao-docs
+```
+
+The Compose setup also uses:
+
+```yaml
+restart: unless-stopped
+```
+
+which means Docker will normally try to bring the containers back after a host
+restart unless they were deliberately stopped.
 
 
 ## Checking the Running Containers
 
-After starting the application, check what is actually running:
+After starting the deployment, check what is actually running:
 
 ```bash
 docker ps --filter "name=madiao"
 ```
 
-Both containers should appear.
+All three containers should appear.
 
 The important information is mainly the container name, status and published
 ports.
@@ -345,11 +441,19 @@ The expected result is roughly:
 | --- | --- | --- |
 | `madiao-client` | `Up` | `0.0.0.0:3000 -> 80` |
 | `madiao-server` | `Up` | `0.0.0.0:3001 -> 3001` |
+| `madiao-docs` | `Up` | `0.0.0.0:3002 -> 80` |
 
-The exact formatting depends on the Docker version, but both containers should
-be in an `Up` state.
+The exact formatting depends on the Docker version, but all three containers
+should be in an `Up` state.
 
-If one is missing, check all containers including stopped ones:
+The same deployment can also be checked through Compose:
+
+```bash
+docker compose ps
+```
+
+If one container is missing, check all Madiao containers including stopped
+ones:
 
 ```bash
 docker ps -a --filter "name=madiao"
@@ -378,11 +482,17 @@ Then check the client:
 docker logs madiao-client --tail 50
 ```
 
-For the nginx container there may not be much interesting output before anybody
-visits the site.
+and the documentation container:
+
+```bash
+docker logs madiao-docs --tail 50
+```
+
+For the two nginx containers there may not be much interesting output before
+somebody visits the relevant site.
 
 The main point is that there should not be a repeating crash, missing-file error
-or other obvious startup failure.
+or another obvious startup failure.
 
 
 ## Testing the Server Directly
@@ -391,8 +501,13 @@ Before testing the full game, it is useful to check the server separately.
 
 The Node server has a basic Express route on port `3001`.
 
-Opening `http://<server-address>:3001` should return the simple Madiao server
-page.
+Opening:
+
+```text
+http://<server-address>:3001
+```
+
+should return the simple Madiao server page.
 
 This does not test Socket.IO gameplay, but it confirms several useful things at
 once:
@@ -410,7 +525,11 @@ The problem is further down the stack.
 
 ## Testing the Client
 
-Next, open `http://<server-address>:3000`.
+Next, open:
+
+```text
+http://<server-address>:3000
+```
 
 The Madiao client should load.
 
@@ -422,13 +541,37 @@ site is already working and the Socket.IO connection becomes the next thing to
 check.
 
 
+## Testing the Documentation
+
+The documentation should also be checked independently through:
+
+```text
+http://<server-address>:3002
+```
+
+The MkDocs site should load with its normal navigation, styling and internal
+links.
+
+This confirms that:
+
+- the documentation image built successfully;
+- MkDocs generated the static site;
+- the documentation nginx process is running;
+- port `3002` is published correctly.
+
+It is worth opening more than only the home page.
+
+For example, move between a few technical and runbook pages to make sure the
+generated navigation and relative links behave normally.
+
+
 ## Basic Multiplayer Test
 
 A first deployment should not really be considered finished just because the
 home screen loads.
 
-Madiao is a multiplayer application, so the final check should involve the
-actual game flow.
+Madiao is a multiplayer application, so the final application check should
+involve the actual game flow.
 
 A small test is enough:
 
@@ -444,11 +587,11 @@ A small test is enough:
 
 There is no need to play an entire match after every first deployment.
 
-The purpose is simply to prove that nginx is serving the client, Socket.IO is
-connected, lobby events work, server state reaches both clients, private hands
-are delivered correctly and gameplay events are accepted.
+The purpose is simply to prove that nginx is serving the React client,
+Socket.IO is connected, lobby events work, server state reaches both clients,
+private hands are delivered correctly and gameplay events are accepted.
 
-If all of those work, the core deployment is operating properly.
+If all of those work, the core application deployment is operating properly.
 
 
 ## Useful First-Deployment Command Sequence
@@ -461,21 +604,34 @@ cd ~/madiao
 
 git status
 
+cp .env.example .env
+nano .env
+
 docker compose config
 
 docker compose build
 
 docker compose up -d
 
-docker ps --filter "name=madiao"
+docker compose ps
 
 docker logs madiao-server --tail 50
-
 docker logs madiao-client --tail 50
+docker logs madiao-docs --tail 50
 ```
 
-After that, test `http://<server-address>:3001` and
-`http://<server-address>:3000`, then perform a small multiplayer test.
+The `cp` command is only required when creating the production `.env` file for
+the first time.
+
+After that, test:
+
+```text
+http://<server-address>:3001
+http://<server-address>:3000
+http://<server-address>:3002
+```
+
+and then perform a small multiplayer test.
 
 It is deliberately better to keep these checks separate rather than putting
 everything into one large command.
@@ -491,14 +647,15 @@ server.
 
 The host mainly needs Git, Docker and the Docker Compose plugin.
 
-The project is cloned from the repository, the production client/server
-addresses are checked, and Docker Compose is validated before anything is built.
+The project is cloned from the repository, the production `.env` file is created
+from `.env.example`, and Docker Compose is validated before anything is built.
 
 The main first-time deployment sequence is:
 
 ```mermaid
 flowchart TD
     Clone["Clone"]
+    Env["Create .env"]
     Configure["Configure production addresses"]
     Config["docker compose config"]
     Build["docker compose build"]
@@ -507,20 +664,44 @@ flowchart TD
     Logs["Check logs"]
     Server["Test server"]
     Client["Test client"]
+    Docs["Test documentation"]
     Multi["Test multiplayer"]
 
-    Clone --> Configure --> Config --> Build --> Up --> Containers --> Logs --> Server --> Client --> Multi
+    Clone --> Env --> Configure --> Config --> Build --> Up --> Containers --> Logs --> Server --> Client --> Docs --> Multi
 ```
 
-The two production containers should end up as:
+The three base production containers should end up as:
 
 | Container | Host → container |
 | --- | --- |
 | `madiao-client` | `:3000 -> :80` |
 | `madiao-server` | `:3001 -> :3001` |
+| `madiao-docs` | `:3002 -> :80` |
 
-Lastly, a working web page is only part of the test.
+The client and server make up the actual multiplayer application.
+
+The documentation container exists alongside them and serves the generated
+MkDocs site independently.
+
+Lastly, a working web page is only part of the application test.
 
 Because the client and multiplayer server are separate, the first deployment
 should always be checked far enough to prove that two players can actually
 connect to the same lobby and exchange game state.
+
+!!! info "Base production setup complete"
+    At this point Madiao should be working through the directly published Docker
+    ports.
+
+    The game should be available through port `3000`, the Node.js server through
+    port `3001`, and the documentation through port `3002`.
+
+    This is the base production deployment described throughout the earlier
+    deployment and troubleshooting pages.
+
+    The live Madiao server adds HTTPS, a host-level nginx reverse proxy,
+    automated certificate renewal and restricted application ports as a final
+    production-hardening step.
+
+    Once the base deployment is working correctly, continue to
+    [HTTPS and Reverse Proxy](https-and-reverse-proxy.md).

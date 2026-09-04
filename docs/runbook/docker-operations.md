@@ -18,18 +18,24 @@ The important part is knowing how to answer a few fairly common questions:
 - Why did one stop?
 - What are the logs showing?
 - How do I restart one service?
-- How do I rebuild only the client or server?
+- How do I rebuild only the service I changed?
 - How do I stop the application safely?
 - What can be cleaned up without touching unrelated projects?
 
-Madiao currently runs as two Docker Compose services:
+Madiao currently runs as three Docker Compose services:
 
 | Service | Container | Host Port | Container Port |
 | --- | --- | --- | --- |
 | `client` | `madiao-client` | `3000` | `80` |
 | `server` | `madiao-server` | `3001` | `3001` |
+| `docs` | `madiao-docs` | `3002` | `80` |
 
-The Compose file also gives both containers:
+The client and server are the two services which make up the game itself.
+
+The documentation service sits beside them and serves the generated MkDocs site.
+It does not take part in the multiplayer communication or game state.
+
+The Compose file also gives the services:
 
 ```yaml
 restart: unless-stopped
@@ -79,6 +85,8 @@ The new version is applied when Compose recreates the container:
 docker compose up -d server
 ```
 
+The same applies to the client and documentation services.
+
 This is the same distinction used during
 [Rebuilding the Application](production-updates.md#rebuilding-the-application)
 and
@@ -96,10 +104,17 @@ docker ps --filter "name=madiao"
 
 This shows running containers whose names contain `madiao`.
 
-The two expected containers are `madiao-client` and `madiao-server`.
+The three expected containers are:
 
-The important columns are normally `NAMES`, `STATUS` and `PORTS`. Both
-containers should show as `Up`.
+```text
+madiao-client
+madiao-server
+madiao-docs
+```
+
+The important columns are normally `NAMES`, `STATUS` and `PORTS`.
+
+All three containers should show as `Up`.
 
 The published ports should correspond to:
 
@@ -107,6 +122,7 @@ The published ports should correspond to:
 | --- | --- |
 | `madiao-client` | host `3000` → container `80` |
 | `madiao-server` | host `3001` → container `3001` |
+| `madiao-docs` | host `3002` → container `80` |
 
 Because Madiao is managed through Compose, another useful command is:
 
@@ -144,9 +160,10 @@ docker ps -a --filter "name=madiao"
 The `-a` includes stopped containers.
 
 This is particularly useful when a container starts, encounters an error and
-exits immediately. In that situation it may disappear from the normal
-running-container list even though Docker still has the stopped container and
-its logs.
+exits immediately.
+
+In that situation it may disappear from the normal running-container list even
+though Docker still has the stopped container and its logs.
 
 A useful troubleshooting order is therefore:
 
@@ -175,10 +192,16 @@ The server log can be checked with:
 docker logs madiao-server --tail 50
 ```
 
-and the client with:
+the client with:
 
 ```bash
 docker logs madiao-client --tail 50
+```
+
+and the documentation container with:
+
+```bash
+docker logs madiao-docs --tail 50
 ```
 
 `--tail 50` means only the most recent 50 lines are displayed.
@@ -224,6 +247,12 @@ or for one service:
 docker compose logs --tail 50 server
 ```
 
+For example, the documentation logs can be checked with:
+
+```bash
+docker compose logs --tail 50 docs
+```
+
 To follow:
 
 ```bash
@@ -252,7 +281,13 @@ For the server:
 docker compose restart server
 ```
 
-Or both:
+For the documentation:
+
+```bash
+docker compose restart docs
+```
+
+Or all services:
 
 ```bash
 docker compose restart
@@ -267,11 +302,12 @@ It does **not** rebuild the image.
 | --- | --- |
 | Temporary runtime/process problem | Often yes |
 | React/Node source changed | No |
+| Documentation source changed | No |
 | Dockerfile changed | No |
 | Dependencies changed | No |
 
 A restart is therefore useful for a temporary process problem, but not for
-applying new source code which has not been built into the image.
+applying new files which have not been built into the image.
 
 
 !!! warning "Restarting the server clears active games"
@@ -311,7 +347,8 @@ flowchart TD
 The fact that Docker reused the same container does not preserve JavaScript
 memory.
 
-Restarting the client does not have this particular server-side consequence.
+Restarting the client or documentation container does not have this particular
+server-side consequence.
 
 The reason the server cannot preserve an active match across a restart is covered
 in more detail in
@@ -348,13 +385,26 @@ docker compose build server
 docker compose up -d server
 ```
 
+If the documentation has changed, use:
+
+```bash
+docker compose build docs
+docker compose up -d docs
+```
+
+This is required because the Markdown files are converted into the static MkDocs
+site while the documentation image is being built.
+
+Simply restarting `madiao-docs` would continue serving the files already inside
+the existing image.
+
 A useful rule is:
 
 ```mermaid
 flowchart TD
     Problem{"What changed?"}
     Runtime["Temporary runtime problem"]
-    Source["Source code, Dockerfile or dependencies"]
+    Source["Source, Dockerfile or dependencies"]
     Restart["docker compose restart <service>"]
     Build["docker compose build <service>"]
     Up["docker compose up -d <service>"]
@@ -370,7 +420,8 @@ the old image.
 
 ## Rebuilding Individual Services
 
-There is no requirement to rebuild both sides every time.
+There is no requirement to rebuild every service whenever only one part of the
+project has changed.
 
 To rebuild only the client:
 
@@ -410,8 +461,25 @@ This is useful for server-only changes such as:
 The same warning applies here: recreating `madiao-server` resets all active
 games.
 
-If there is any doubt about whether a change affects both sides, rebuilding both
-services is perfectly reasonable for a project of this size:
+To rebuild only the documentation:
+
+```bash
+docker compose build docs
+docker compose up -d docs
+```
+
+This is useful for changes to:
+
+- Markdown documentation;
+- `mkdocs.yaml`;
+- documentation CSS;
+- the documentation Dockerfile.
+
+The documentation service is independent from the game containers, so rebuilding
+it does not interrupt an active match.
+
+If there is any doubt about which services have changed, rebuilding the complete
+Compose project is perfectly reasonable for a project of this size:
 
 ```bash
 docker compose build
@@ -449,9 +517,20 @@ docker compose stop server
 docker compose start server
 ```
 
+or:
+
+```bash
+docker compose stop docs
+docker compose start docs
+```
+
 Again, stopping the server destroys the live JavaScript state.
 
 Starting the same container later does not restore the old lobbies or games.
+
+Stopping the client or documentation container does not clear the server's
+in-memory game state, although players obviously cannot use whichever service is
+stopped while it remains unavailable.
 
 
 ### `stop` compared with `down`
@@ -480,7 +559,7 @@ For Madiao, the difference is:
 | `docker compose down` | Compose containers are stopped and removed |
 
 The images are not normally removed by a basic `docker compose down`, so the
-application can usually be created again with:
+services can usually be created again with:
 
 ```bash
 docker compose up -d
@@ -504,6 +583,12 @@ or:
 
 ```bash
 docker compose start server
+```
+
+or:
+
+```bash
+docker compose start docs
 ```
 
 If the container no longer exists because `docker compose down` was used, use:
@@ -548,12 +633,22 @@ docker port madiao-server
 
 should show container port `3001` published on host port `3001`.
 
-This is useful when the application process appears healthy but the expected
-address cannot be reached. For the wider production checks, see
+The documentation container can be checked with:
+
+```bash
+docker port madiao-docs
+```
+
+which should show container port `80` published on host port `3002`.
+
+This is useful when the service itself appears healthy but the expected address
+cannot be reached.
+
+For the wider production checks, see
 [Website Does Not Load](troubleshooting.md#website-does-not-load) and
 [Client Loads but Cannot Connect to Server](troubleshooting.md#client-loads-but-cannot-connect-to-server).
 
-The current Compose file defines the mappings as:
+The base Compose configuration defines the mappings as:
 
 ```yaml
 client:
@@ -563,9 +658,14 @@ client:
 server:
   ports:
     - "3001:3001"
+
+docs:
+  ports:
+    - "3002:80"
 ```
 
-so anything different from that would be worth investigating.
+so anything different from that would be worth investigating at this stage of
+the deployment.
 
 
 ## Inspecting a Container
@@ -580,6 +680,12 @@ or:
 
 ```bash
 docker inspect madiao-client
+```
+
+or:
+
+```bash
+docker inspect madiao-docs
 ```
 
 This produces a large amount of JSON and is not something which needs to be read
@@ -606,7 +712,7 @@ output rather than starting with `docker inspect` for every problem.
 Docker keeps old image layers and build cache over time.
 
 After many rebuilds it can therefore use considerably more disk space than the
-two currently running containers might suggest.
+three currently running containers might suggest.
 
 A safe first check is:
 
@@ -701,14 +807,19 @@ The commands used most often for Madiao are:
 | Show running Compose services | `docker compose ps` |
 | Include stopped Madiao containers | `docker ps -a --filter "name=madiao"` |
 | Check server logs | `docker logs madiao-server --tail 50` |
+| Check client logs | `docker logs madiao-client --tail 50` |
+| Check documentation logs | `docker logs madiao-docs --tail 50` |
 | Follow server logs | `docker logs -f madiao-server` |
 | Restart client | `docker compose restart client` |
 | Restart server | `docker compose restart server` |
+| Restart documentation | `docker compose restart docs` |
 | Build client | `docker compose build client` |
 | Apply client image | `docker compose up -d client` |
 | Build server | `docker compose build server` |
 | Apply server image | `docker compose up -d server` |
-| Stop both services | `docker compose stop` |
+| Build documentation | `docker compose build docs` |
+| Apply documentation image | `docker compose up -d docs` |
+| Stop all services | `docker compose stop` |
 | Start stopped services | `docker compose start` |
 | Remove Compose containers | `docker compose down` |
 | Validate Compose | `docker compose config` |
@@ -724,11 +835,21 @@ Most of these commands should be run from `~/madiao` when they use
 Docker operations become much easier once images and containers are treated as
 two separate things.
 
-The Dockerfile is used to build an image, while the running application exists
+The Dockerfile is used to build an image, while the running service exists
 inside a container created from that image.
 
-For Madiao, the two main containers are `madiao-client` and
-`madiao-server`.
+For Madiao, the client and server containers make up the game itself:
+
+```text
+madiao-client
+madiao-server
+```
+
+The documentation is served through a third production container:
+
+```text
+madiao-docs
+```
 
 The most useful everyday checks are:
 
@@ -738,12 +859,13 @@ docker ps -a --filter "name=madiao"
 
 docker logs madiao-server --tail 50
 docker logs madiao-client --tail 50
+docker logs madiao-docs --tail 50
 ```
 
 A restart can solve a temporary runtime problem, however, it does not rebuild
-changed source code.
+changed source files.
 
-For code changes the normal pattern is:
+For code or documentation changes the normal pattern is:
 
 ```mermaid
 flowchart TD
@@ -755,9 +877,15 @@ flowchart TD
 ```
 
 Lastly, any operation which stops or replaces the Node server clears Madiao's
-active in-memory games. Docker may preserve the container or image, but it does
-not preserve the JavaScript memory inside a stopped process.
+active in-memory games.
 
-Docker cleanup should also be kept conservative. Check disk usage first and
-avoid broad system-wide pruning unless it is actually understood what Docker is
-about to remove.
+Docker may preserve the container or image, but it does not preserve the
+JavaScript memory inside a stopped process.
+
+The client and documentation services do not contain that live game state, so
+restarting either of them does not clear the server's active lobbies.
+
+Docker cleanup should also be kept conservative.
+
+Check disk usage first and avoid broad system-wide pruning unless it is actually
+understood what Docker is about to remove.

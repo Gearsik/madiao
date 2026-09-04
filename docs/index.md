@@ -68,6 +68,8 @@ and prevents important commands from becoming buried inside larger paragraphs.
 | Understand the Socket.IO events | [Socket.IO Events](technical/socketio-events.md) |
 | Diagnose something which is not working | [Troubleshooting by Problem](runbook/troubleshooting.md) |
 | Recover from a failed deployment | [Recovery and Rollback](runbook/rollback.md) |
+| Add HTTPS and harden the production deployment | [HTTPS and Reverse Proxy](runbook/https-and-reverse-proxy.md) |
+| See what changes after HTTPS is enabled | [Changes After HTTPS](runbook/changes-after-https.md) |
 | Find a command quickly | [Quick Reference](runbook/quick-reference.md) |
 
 
@@ -88,7 +90,7 @@ rather than treating everything as one long document.
 -   **Deployment and Docker**
 
     Set up the production server, deploy the application, update it and manage
-    the two Docker services.
+    the Docker services.
 
     [Start with First-Time Production Setup →](runbook/first-time-setup.md)
 
@@ -112,6 +114,13 @@ rather than treating everything as one long document.
     the operational limitations which still exist.
 
     [Start with Security and Repository Notes →](technical/security.md)
+
+-   **Production Hardening**
+
+    Add HTTPS, place the application behind the host nginx reverse proxy and
+    review the changes this introduces to the original production setup.
+
+    [Start with HTTPS and Reverse Proxy →](runbook/https-and-reverse-proxy.md)
 
 -   **Quick Reference**
 

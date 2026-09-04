@@ -90,5 +90,9 @@ nav:
       - Security and Repository Notes: technical/security.md
       - Current Operational Limitations: technical/limitations.md
 
+  - Production Hardening:
+      - HTTPS and Reverse Proxy: runbook/https-and-reverse-proxy.md
+      - Changes after HTTPS: runbook/changes-after-https.md
+
   - Quick Reference:
       - Quick Reference: runbook/quick-reference.md

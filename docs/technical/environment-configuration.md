@@ -28,16 +28,16 @@ application and solve two different problems.
 
 ## The Current Configuration Setup
 
-The current project does not use one single environment file for everything.
-
-The configuration is split between the client and the production Docker setup.
+The project uses slightly different configuration paths depending on whether the
+game is running in development or through Docker.
 
 The important pieces are:
 
 ```text
-client/.env.development
-client/.env.production
+.env
+.env.example
 
+client/.env.development
 client/src/socket.js
 
 server/index.js
@@ -45,19 +45,34 @@ server/index.js
 docker-compose.yml
 ```
 
+During local development, the React client can use
+`client/.env.development` because it is started directly through the React
+development environment.
+
+The production Docker setup works slightly differently.
+
+The root `.env` file provides the values which Docker Compose needs, while
+`.env.example` shows the expected variables without containing the actual
+production configuration.
+
 At a simplified level the relationship looks like this:
 
 ```mermaid
 flowchart TD
     Config["Environment-specific configuration"]
 
-    Config --> ClientFiles["client/.env.development<br/>or client/.env.production"]
-    ClientFiles --> ClientVar["REACT_APP_SERVER_URL<br/>Where should the browser connect?"]
-    ClientVar --> Socket["client/src/socket.js"]
-    Socket --> Connection["Socket.IO connection to the server"]
+    Config --> Dev["client/.env.development"]
+    Dev --> DevVar["REACT_APP_SERVER_URL<br/>Development value"]
 
-    Config --> Compose["docker-compose.yml"]
-    Compose --> ServerVar["CLIENT_ORIGIN<br/>Which browser origin should the server allow?"]
+    Config --> RootEnv["Root .env"]
+    RootEnv --> Compose["docker-compose.yml"]
+
+    DevVar --> Socket["client/src/socket.js"]
+
+    Compose --> ClientArg["REACT_APP_SERVER_URL<br/>Client build argument"]
+    ClientArg --> Socket
+
+    Compose --> ServerVar["CLIENT_ORIGIN<br/>Server runtime variable"]
     ServerVar --> Server["server/index.js"]
     Server --> Cors["Socket.IO CORS configuration"]
 ```
@@ -66,6 +81,9 @@ The client therefore needs to know **where it should connect**, while the server
 needs to know **which client address it should allow to connect**.
 
 Both are required for the production client and server to communicate properly.
+
+The documentation service does not need either of these values because it only
+serves the static MkDocs site.
 
 
 ## `REACT_APP_SERVER_URL`
@@ -87,7 +105,8 @@ const socket = io(
 `REACT_APP_SERVER_URL` is therefore the address the browser will use when it
 tries to connect to the Node.js game server.
 
-The project currently has separate values for development and production.
+The project uses a development value when the client is started locally and a
+production value when the Docker image is built.
 
 
 ### Development
@@ -113,16 +132,24 @@ Node server is running on that same machine.
 
 ### Production
 
-The production build uses:
+The production Docker build receives its server address through the root:
 
 ```text
-client/.env.production
+.env
 ```
 
-This contains the address of the live game server rather than `localhost`.
+The root file contains the values used by Docker Compose, including:
 
-It is worth remembering that the browser itself ultimately needs to reach this
-address.
+```env
+REACT_APP_SERVER_URL=http://<server-address>:3001
+CLIENT_ORIGIN=http://<server-address>:3000
+```
+
+Docker Compose then passes `REACT_APP_SERVER_URL` into the client image as a
+build argument.
+
+The browser ultimately needs to be able to reach whatever address is placed
+into `REACT_APP_SERVER_URL`.
 
 !!! warning "Do not use localhost in the public production client"
     Using `http://localhost:3001` in the production build would not mean
@@ -139,14 +166,29 @@ from another computer it would obviously be pointing at the wrong machine.
 One slightly unusual part of the React setup is that
 `REACT_APP_SERVER_URL` is effectively decided when the client is built.
 
-The production Dockerfile builds the React application using:
+Docker Compose reads the value from the root `.env` file and supplies it to the
+client build:
+
+```yaml title="docker-compose.yml"
+client:
+  build:
+    context: ./client
+    args:
+      REACT_APP_SERVER_URL: ${REACT_APP_SERVER_URL}
+```
+
+The client Dockerfile then accepts that value:
+
+```dockerfile title="client/Dockerfile"
+ARG REACT_APP_SERVER_URL
+ENV REACT_APP_SERVER_URL=$REACT_APP_SERVER_URL
+```
+
+before building the React application:
 
 ```dockerfile title="client/Dockerfile"
 RUN npm run build
 ```
-
-Create React App reads the `.env.production` values during that build and places
-the required values into the generated JavaScript bundle.
 
 Afterwards the build output is copied into nginx:
 
@@ -159,8 +201,8 @@ At that point nginx is only serving already-built static files.
 
 It is no longer running the React build process.
 
-This means that changing `client/.env.production` does not magically change a
-client image which has already been built.
+This means that changing `REACT_APP_SERVER_URL` in the root `.env` file does
+not magically change a client image which has already been built.
 
 The client needs to be rebuilt before the new value becomes part of the
 application.
@@ -169,7 +211,7 @@ In practical terms:
 
 ```mermaid
 flowchart TD
-    Change["Change client/.env.production"]
+    Change["Change REACT_APP_SERVER_URL<br/>in root .env"]
     Build["Rebuild the client image"]
     Replace["Replace or start madiao-client"]
     Browser["Browser receives JavaScript containing the new value"]
@@ -218,12 +260,12 @@ allowed to connect.
 During local development, if no value is provided, the fallback is
 `http://localhost:3000`, which matches the normal React development server.
 
-In production, Docker Compose supplies the live client origin to the server
-container through:
+In production, Docker Compose reads the value from the root `.env` file and
+supplies it to the server container through:
 
 ```yaml title="docker-compose.yml"
 environment:
-  CLIENT_ORIGIN: <production-client-address>
+  CLIENT_ORIGIN: ${CLIENT_ORIGIN}
 ```
 
 This value is read when the Node process starts.
@@ -257,7 +299,7 @@ A simple way of remembering it is:
 
 This distinction also changes how a configuration problem should be fixed.
 
-If `CLIENT_ORIGIN` is wrong, changing the value and recreating/restarting the
+If `CLIENT_ORIGIN` is wrong, changing the value and recreating or restarting the
 server container is enough because Node reads it when the server starts.
 
 If `REACT_APP_SERVER_URL` is wrong, the React client needs to be rebuilt because
@@ -266,13 +308,13 @@ the value is already inside the production JavaScript files.
 
 ## Docker Compose Configuration
 
-The production client and server are tied together through:
+The production services are tied together through:
 
 ```text
 docker-compose.yml
 ```
 
-The current structure is roughly:
+The structure is roughly:
 
 ```yaml title="docker-compose.yml"
 services:
@@ -287,7 +329,7 @@ services:
       - "3001:3001"
 
     environment:
-      CLIENT_ORIGIN: <production-client-address>
+      CLIENT_ORIGIN: ${CLIENT_ORIGIN}
 
     restart: unless-stopped
 
@@ -295,6 +337,8 @@ services:
   client:
     build:
       context: ./client
+      args:
+        REACT_APP_SERVER_URL: ${REACT_APP_SERVER_URL}
 
     container_name: madiao-client
 
@@ -302,30 +346,67 @@ services:
       - "3000:80"
 
     restart: unless-stopped
+
+
+  docs:
+    build:
+      context: .
+
+    container_name: madiao-docs
+
+    ports:
+      - "3002:80"
+
+    restart: unless-stopped
 ```
 
 There are a few useful things to take from this.
 
-Firstly, both services are built from separate folders: `./server` and
-`./client`. This means each service uses the Dockerfile inside its own build
-context.
+Firstly, the client and server are built from separate folders because each has
+its own application Dockerfile and build context.
 
-Secondly, the port mappings explain why the game is reached through `3000` and
-`3001` from outside Docker:
+The documentation build is slightly different.
+
+Its build context is the project root because the documentation Dockerfile needs
+access to both:
+
+```text
+mkdocs.yaml
+docs/
+```
+
+The root Dockerfile first uses MkDocs to generate the static documentation site
+and then copies the result into an nginx image.
+
+Secondly, the port mappings explain how each service is reached in the base
+production deployment:
 
 | Host port | Container port | Service |
 | ---: | ---: | --- |
 | `3000` | `80` | `madiao-client` / nginx |
 | `3001` | `3001` | `madiao-server` / Node.js |
+| `3002` | `80` | `madiao-docs` / nginx |
 
-Thirdly, `CLIENT_ORIGIN` is passed directly into the server container here.
+Thirdly, the two application-specific environment values enter the Docker setup
+in different ways.
 
-At the moment the production client address is written directly into the Compose
-file rather than being read from a separate root `.env` file.
+`CLIENT_ORIGIN` is passed into the running server container.
 
-For this project that works and the value itself is not a password or secret.
-However, it is still worth knowing where it lives because changing the
-production address would require updating this file.
+`REACT_APP_SERVER_URL` is passed into the client image while that image is being
+built.
+
+The documentation service does not require either value.
+
+Both production values are read by Docker Compose from the root `.env` file.
+
+The repository also contains:
+
+```text
+.env.example
+```
+
+which records which variables are expected without storing the live production
+values.
 
 
 ## Checking the Final Docker Configuration
@@ -352,6 +433,9 @@ It is especially useful for checking:
 - container names;
 - environment values;
 - YAML structure.
+
+With the documentation service included, the resolved configuration should also
+show the `docs` service and its `3002:80` mapping.
 
 For example, if the server is rejecting the browser and there is a suspicion
 that `CLIENT_ORIGIN` is wrong, checking:
@@ -388,8 +472,8 @@ and the server can use its built-in fallback:
 'http://localhost:3000'
 ```
 
-During production, the same code is used but the addresses change to the live
-server addresses.
+During production, the same application code is used but the addresses are
+provided through the root `.env` file and Docker Compose.
 
 This is the main reason environment configuration exists in Madiao.
 
@@ -399,6 +483,10 @@ development computer or on the live server.
 Only the small amount of information describing how the two sides find each
 other needs to change.
 
+The documentation container does not take part in this client/server
+configuration because the generated MkDocs site does not need to communicate
+with the game server.
+
 
 ## Environment Files and Git
 
@@ -406,6 +494,23 @@ Environment files deserve a little bit of extra attention because the word
 "environment" often gets associated with secrets.
 
 That is not automatically the case.
+
+The repository includes:
+
+```text
+.env.example
+```
+
+so that the expected variable names are visible without committing the live
+`.env` file itself.
+
+The actual root:
+
+```text
+.env
+```
+
+is ignored by Git.
 
 For example, `REACT_APP_SERVER_URL` cannot really be treated as a secret
 because the value is eventually delivered to every player's browser as part of
@@ -433,29 +538,25 @@ The wider repository rules for environment files and credentials are covered in
 
 ## Changing the Production Address
 
-If the server address changes in the future, there are currently two places
-which are especially important.
+If the production address changes in the future, the two application values are
+kept in the root:
 
-The client needs its production server address updated in
-`client/.env.production`.
+```text
+.env
+```
 
 For example:
 
-```env title="client/.env.production"
+```env title=".env"
 REACT_APP_SERVER_URL=http://<new-server-address>:3001
+CLIENT_ORIGIN=http://<new-server-address>:3000
 ```
 
-Because this is a build-time value, rebuild the client afterwards.
+`REACT_APP_SERVER_URL` is a build-time setting, so changing it requires the
+client image to be rebuilt.
 
-The server also needs to allow the correct client address through the
-`CLIENT_ORIGIN` value in `docker-compose.yml`.
-
-For example:
-
-```yaml
-environment:
-  CLIENT_ORIGIN: http://<new-client-address>:3000
-```
+`CLIENT_ORIGIN` is supplied to the Node.js server at runtime, so the server
+container needs to be recreated or restarted with the updated value.
 
 After changing the configuration, the normal checks are:
 
@@ -492,12 +593,16 @@ The biggest difference between them is when those values are applied:
 | `REACT_APP_SERVER_URL` | React client build time |
 | `CLIENT_ORIGIN` | Node server runtime |
 
-The development version uses `localhost`, while the production version uses the
-live addresses.
+The development client uses `client/.env.development`, while the production
+Docker configuration reads both application values from the root `.env` file.
 
-The current client production address is kept in
-`client/.env.production`, while Docker Compose supplies `CLIENT_ORIGIN` directly
-to the server container.
+Docker Compose passes `REACT_APP_SERVER_URL` into the client build and supplies
+`CLIENT_ORIGIN` to the server container at runtime.
+
+The production deployment also contains the `madiao-docs` service.
+
+It does not need either application environment variable because its only job is
+to serve the generated MkDocs site.
 
 Lastly, `docker compose config` is one of the easiest ways of checking the
 resolved production Docker configuration before making larger changes.

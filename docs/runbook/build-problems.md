@@ -1,9 +1,9 @@
 # Build and Dependency Problems
 
 Most normal Madiao deployments are fairly uneventful once Docker has a valid
-Compose file and both services have already been built successfully before.
+Compose file and the production services have already been built successfully before.
 
-When a deployment does fail however, the error often happens before either
+When a deployment does fail however, the error often happens before the affected
 container is even started.
 
 The most common build-related areas are:
@@ -14,6 +14,7 @@ The most common build-related areas are:
 - Node.js
 - Dockerfiles
 - the React production build
+- the MkDocs documentation build
 - Docker Compose YAML
 
 These problems can look more complicated than they actually are because Docker
@@ -31,14 +32,19 @@ flowchart TD
 
     Compose --> Client["Client Dockerfile"]
     Compose --> Server["Server Dockerfile"]
+    Compose --> Docs["Documentation Dockerfile"]
 
     Client --> ClientInstall["npm ci"]
     ClientInstall --> ReactBuild["npm run build"]
     ReactBuild --> Static["React production build"]
-    Static --> Nginx["Copy build into nginx"]
+    Static --> ClientNginx["Copy build into nginx"]
 
     Server --> ServerInstall["npm ci --omit=dev"]
     ServerInstall --> CopyServer["Copy server code"]
+
+    Docs --> MkDocsInstall["Install mkdocs-material"]
+    MkDocsInstall --> MkDocsBuild["mkdocs build"]
+    MkDocsBuild --> DocsNginx["Copy generated site into nginx"]
 ```
 
 Finding which step failed normally reduces the problem considerably.
@@ -46,7 +52,7 @@ Finding which step failed normally reduces the problem considerably.
 
 ## `npm ci` Failure
 
-Both Madiao Dockerfiles currently use `npm ci`.
+The client and server Dockerfiles currently use `npm ci`.
 
 The client build contains:
 
@@ -338,10 +344,10 @@ This matters because there are potentially several environments involved:
 | Docker client build | Client Docker base image |
 | Docker server build | Server Docker base image |
 
-The current Dockerfiles use:
+The current application Dockerfiles use:
 
 ```dockerfile title="server/Dockerfile"
-FROM node:24-alpine
+FROM node:22-alpine
 ```
 
 for the server and:
@@ -352,9 +358,12 @@ FROM node:24-alpine AS build
 
 for the React build.
 
-That means the production dependency installation happens inside Node 24-based
-Docker images rather than using whatever Node version happens to be installed on
-the host machine.
+That means the production dependency installation happens inside the Node
+versions selected by the Dockerfiles rather than using whatever Node version
+happens to be installed on the host machine.
+
+The documentation image uses a separate Python build stage, so Node/npm version
+differences do not apply to that service.
 
 
 ### Check versions when behaviour differs
@@ -381,14 +390,18 @@ the version difference becomes worth checking.
 
 ### The Docker tag is still a range
 
-Although:
+Although the Dockerfiles currently use:
 
-`node:24-alpine`
+```text
+node:24-alpine
+node:22-alpine
+```
 
-fixes the Node major version, it does not permanently pin one exact patch
-release or one exact npm release forever.
+those tags fix the Node major versions but do not permanently pin one exact
+patch release or one exact npm release forever.
 
-A later Docker pull may therefore contain a newer Node 24 patch/npm combination.
+A later Docker pull may therefore contain newer patch/npm combinations within
+those selected major versions.
 
 That is normally fine, however, if dependency reproducibility becomes a recurring
 problem, the base image can be pinned more tightly later.
@@ -459,6 +472,12 @@ Server:
 docker compose build server
 ```
 
+Documentation:
+
+```bash
+docker compose build docs
+```
+
 This removes a large amount of unrelated output and makes it obvious which image
 cannot be built.
 
@@ -468,7 +487,7 @@ cannot be built.
 For the current server Dockerfile the rough sequence is:
 
 ```dockerfile
-FROM node:24-alpine
+FROM node:22-alpine
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev
@@ -493,6 +512,22 @@ EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
 ```
 
+For the documentation image, the root Dockerfile is roughly:
+
+```dockerfile title="Dockerfile"
+FROM python:3.13-alpine AS build
+WORKDIR /app
+COPY mkdocs.yaml .
+COPY docs ./docs
+RUN pip install --no-cache-dir mkdocs-material
+RUN mkdocs build --config-file mkdocs.yaml --site-dir /site
+
+FROM nginx:alpine
+COPY --from=build /site /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+```
+
 If the output says failure happened during:
 
 `RUN npm ci`
@@ -512,13 +547,24 @@ If it happens during:
 
 look at the build context, file path and `.dockerignore`.
 
+If the documentation image fails during:
+
+```text
+RUN mkdocs build --config-file mkdocs.yaml --site-dir /site
+```
+
+then Docker, Python and the theme installation have already reached the MkDocs
+build itself. The next things worth checking are `mkdocs.yaml`, the Markdown
+files and any referenced documentation paths.
+
 
 ### Remember the build contexts
 
-Docker Compose currently builds from:
+Docker Compose uses different build contexts for the three services:
 
-- `./client`
-- `./server`
+- `./client` for the client;
+- `./server` for the server;
+- the project root for the documentation image.
 
 That means the client Dockerfile can only access files inside the client build
 context and the server Dockerfile can only access files inside the server build
@@ -530,13 +576,25 @@ A Dockerfile cannot casually copy a file from:
 
 outside its build context.
 
+The documentation build deliberately uses the project root because its Dockerfile
+needs access to both:
+
+```text
+mkdocs.yaml
+docs/
+```
+
 
 ### Check `.dockerignore`
 
 Files ignored by `.dockerignore` are not sent into the build context.
 
+The client and server have their own `.dockerignore` files, while the root
+`.dockerignore` controls the documentation build context.
+
 If Docker says a required file does not exist even though it is visible on the
-development machine, check whether it is being excluded.
+development machine, check whether it is being excluded by the `.dockerignore`
+which belongs to that particular build context.
 
 
 ### Get more detailed build output
@@ -551,6 +609,12 @@ or:
 
 ```bash
 docker compose build --progress=plain server
+```
+
+or:
+
+```bash
+docker compose build --progress=plain docs
 ```
 
 can make the build steps easier to follow.
@@ -570,6 +634,12 @@ or:
 
 ```bash
 docker compose build --no-cache server
+```
+
+or:
+
+```bash
+docker compose build --no-cache docs
 ```
 
 !!! tip "Use `--no-cache` only when cache is actually suspicious"
@@ -674,26 +744,35 @@ the exact spelling and capitalisation.
 
 ### Environment variables are read during this build
 
-The production client reads:
+The production client receives `REACT_APP_SERVER_URL` from the root `.env` file
+through Docker Compose.
 
-`client/.env.production`
+The Compose configuration passes it into the client build as an argument:
 
-during:
+```yaml title="docker-compose.yml"
+client:
+  build:
+    context: ./client
+    args:
+      REACT_APP_SERVER_URL: ${REACT_APP_SERVER_URL}
+```
+
+and the client Dockerfile makes the value available before:
 
 ```bash
 npm run build
 ```
 
-That is when:
+runs.
 
-`REACT_APP_SERVER_URL`
-
-becomes part of the generated JavaScript bundle.
+That is when `REACT_APP_SERVER_URL` becomes part of the generated JavaScript
+bundle.
 
 If the build succeeds but the finished application points to the wrong server,
 the issue may not be a failed build at all.
 
-It may simply have been built successfully using the wrong production value.
+It may simply have been built successfully using the wrong value from the root
+`.env` file.
 
 The client variable and the reason it is applied during the React build are
 covered in
@@ -717,6 +796,120 @@ A local `node_modules` directory is not copied into the image.
 The Docker build starts from the dependency definition stored in the package
 files, which is exactly why it can reveal problems hidden by an old local
 installation.
+
+
+## Documentation Build Failure
+
+The documentation service has its own build path which is separate from npm and
+the React/Node.js application builds.
+
+The root Dockerfile first uses Python to install MkDocs Material:
+
+```dockerfile title="Dockerfile"
+FROM python:3.13-alpine AS build
+WORKDIR /app
+
+COPY mkdocs.yaml .
+COPY docs ./docs
+
+RUN pip install --no-cache-dir mkdocs-material
+RUN mkdocs build --config-file mkdocs.yaml --site-dir /site
+```
+
+The generated site is then copied into nginx:
+
+```dockerfile title="Dockerfile"
+FROM nginx:alpine
+COPY --from=build /site /usr/share/nginx/html
+```
+
+This means a documentation build can fail even when the client and server build
+perfectly normally.
+
+
+### Build the documentation separately
+
+If the full Compose build reports a problem in the documentation image, isolate
+it with:
+
+```bash
+docker compose build docs
+```
+
+For more detailed output:
+
+```bash
+docker compose build --progress=plain docs
+```
+
+That keeps npm and the two application Dockerfiles out of the output.
+
+
+### `pip install` failure
+
+If the failure occurs during:
+
+```text
+pip install --no-cache-dir mkdocs-material
+```
+
+then MkDocs has not started building the site yet.
+
+The more useful things to check are the Python base image, package download and
+network access available to the Docker build rather than the Markdown files.
+
+
+### `mkdocs build` failure
+
+If the failure occurs during:
+
+```text
+mkdocs build --config-file mkdocs.yaml --site-dir /site
+```
+
+then the build has already reached MkDocs itself.
+
+Useful things to check include:
+
+- YAML syntax inside `mkdocs.yaml`;
+- a navigation entry pointing to a file which does not exist;
+- Markdown extension configuration;
+- theme/plugin configuration;
+- documentation files which were renamed or moved;
+- paths referenced from the MkDocs configuration.
+
+A useful local check is:
+
+```bash
+mkdocs build
+```
+
+when the documentation development environment is available.
+
+This can expose the same MkDocs error without waiting for another Docker build.
+
+
+### Build succeeds but the live documentation is old
+
+A successful documentation build still does not replace the running container.
+
+After rebuilding:
+
+```bash
+docker compose build docs
+```
+
+the new image is applied with:
+
+```bash
+docker compose up -d docs
+```
+
+If the files are current in Git but the live documentation still shows an older
+version, check whether `madiao-docs` was actually rebuilt and recreated.
+
+The same image/container distinction is covered in more detail in
+[Docker Operations](docker-operations.md#restarting-is-not-rebuilding).
 
 
 ## Docker Compose YAML Errors
@@ -786,7 +979,13 @@ and:
 - "3001:3001"
 ```
 
-keeps the mapping clearly treated as a string.
+and:
+
+```yaml
+- "3002:80"
+```
+
+keeps the mappings clearly treated as strings.
 
 
 ### Validate after every Compose edit
@@ -810,37 +1009,43 @@ This keeps YAML errors separate from application build errors.
 
 ## Build Argument Problems
 
-The current Madiao Compose file does **not** use a `build.args` section.
+The current Madiao client **does** use a Docker build argument for
+`REACT_APP_SERVER_URL`.
 
-The React production URL currently comes from:
+The value starts in the root `.env` file, Docker Compose reads it, and the client
+Dockerfile makes it available before the React production build runs.
 
-`client/.env.production`
+The current path is:
 
-which is read when:
+```mermaid
+flowchart TD
+    Env["Root .env"]
+    Compose["docker-compose.yml"]
+    Arg["REACT_APP_SERVER_URL build argument"]
+    Dockerfile["client/Dockerfile"]
+    Build["npm run build"]
+    Bundle["React production bundle"]
 
-```text
-npm run build
+    Env --> Compose --> Arg --> Dockerfile --> Build --> Bundle
 ```
 
-runs inside the client image. The current configuration path is documented in
-[Development and Production Environments](../technical/environment-configuration.md#development-and-production-environments).
-
-This section is still worth keeping because an earlier deployment approach used
-a Docker build argument, and build arguments may become useful again in the
-future.
+The full configuration path is documented in
+[Environment and Configuration](../technical/environment-configuration.md).
 
 
-### Correct mapping form
+### Correct Compose mapping
 
-If a build argument is reintroduced, a normal Compose structure looks like:
+The current Compose structure is:
 
-```yaml
+```yaml title="docker-compose.yml"
 client:
   build:
     context: ./client
     args:
       REACT_APP_SERVER_URL: ${REACT_APP_SERVER_URL}
 ```
+
+The value on the right comes from the root `.env` file.
 
 A malformed version such as:
 
@@ -860,11 +1065,12 @@ The dash turns that line into a list item containing a mapping, which is not the
 shape expected there.
 
 
-### The Dockerfile must also use the argument
+### The Dockerfile must use the argument
 
-Passing a build argument through Compose is only half of the setup.
+Passing the argument through Compose is only half of the setup.
 
-The Dockerfile must declare/use it before the React build, for example:
+The current client Dockerfile declares the argument and places it into the build
+environment before the React build:
 
 ```dockerfile title="client/Dockerfile"
 ARG REACT_APP_SERVER_URL
@@ -873,38 +1079,52 @@ ENV REACT_APP_SERVER_URL=$REACT_APP_SERVER_URL
 RUN npm run build
 ```
 
-Otherwise Compose can pass the argument successfully while the React build never
-uses it.
+If the Compose argument exists but the Dockerfile does not declare or expose it
+before `npm run build`, the generated React application will not receive the
+intended production value.
 
 
-### Do not mix two configuration methods accidentally
+### Check the root `.env` value
 
-For the current project the production value is provided through:
+Because Compose reads the argument from:
 
 ```text
-client/.env.production
+.env
 ```
 
-If build arguments are added later, decide which method is the actual source of
-truth.
+a missing or incorrect value there can produce a perfectly successful Docker
+build which still points the browser at the wrong server.
 
-Having:
+The resolved configuration can be checked before building with:
 
-| Source | Problem |
-| --- | --- |
-| `.env.production` | Supplies one address |
-| Docker build argument | Supplies a different address |
+```bash
+docker compose config
+```
 
-That creates two competing sources of truth.
+This is useful for confirming that Compose has actually read the intended
+`REACT_APP_SERVER_URL`.
 
-makes troubleshooting unnecessarily confusing.
 
-!!! note "The current project uses `.env.production`, not `build.args`"
-    The build-argument examples in this section are historical/reference
-    material. The current client production URL comes from
-    `client/.env.production` during `npm run build`.
+### Rebuild after changing the value
 
-One clear configuration path is better than two competing ones.
+Changing the root `.env` file does not rewrite an already-built React bundle.
+
+After changing `REACT_APP_SERVER_URL`, rebuild and replace the client:
+
+```bash
+docker compose build client
+docker compose up -d client
+```
+
+Simply restarting the existing client container would continue serving the old
+image and therefore the old build-time value.
+
+!!! note "One production source of truth"
+    The current production path is the root `.env` file through Docker Compose
+    and the client build argument. There is no separate
+    `client/.env.production` file supplying a competing production value.
+
+Keeping one clear path makes this considerably easier to troubleshoot.
 
 
 ## A Clean Dependency Repair Process
@@ -992,9 +1212,12 @@ deployment sequence.
 | `COPY package*.json` | Build context / missing package files |
 | `npm ci` | `package.json` / lockfile / npm compatibility |
 | `npm ci --omit=dev` | Server dependency files |
-| `npm run build` | React source/build/environment |
+| `npm run build` | React source/build/environment/build argument |
+| `pip install mkdocs-material` | Python package/network problem in docs build |
+| `mkdocs build` | `mkdocs.yaml`, docs paths or MkDocs configuration |
 | `COPY . .` | Build context / `.dockerignore` / file paths |
-| nginx copy stage | Did React actually produce `/app/build`? |
+| client nginx copy stage | Did React actually produce `/app/build`? |
+| docs nginx copy stage | Did MkDocs actually produce `/site`? |
 | Build says no space left | `df -h`, `docker system df` |
 | Local build works, Docker fails | Node/npm version, Linux path case, build context |
 | Build succeeds but old behaviour remains | Container may not have been recreated |
@@ -1002,20 +1225,21 @@ deployment sequence.
 
 ## Chapter Summary
 
-The main build path for both Madiao services begins with the package files.
+Madiao now has three separate production build paths.
 
-The client currently performs:
+The client performs:
 
 ```mermaid
 flowchart TD
     Install["npm ci"]
+    Arg["Apply REACT_APP_SERVER_URL build argument"]
     Build["npm run build"]
     Nginx["Copy React build into nginx"]
 
-    Install --> Build --> Nginx
+    Install --> Arg --> Build --> Nginx
 ```
 
-while the server performs:
+The server performs:
 
 ```mermaid
 flowchart TD
@@ -1026,16 +1250,29 @@ flowchart TD
     Install --> Copy --> Run
 ```
 
-Both Dockerfiles currently use Node 24 Alpine for their Node stages.
+and the documentation performs:
+
+```mermaid
+flowchart TD
+    Install["Install mkdocs-material"]
+    Build["mkdocs build"]
+    Nginx["Copy generated site into nginx"]
+
+    Install --> Build --> Nginx
+```
+
+The current client build uses Node 24 Alpine, while the server uses Node 22
+Alpine. The documentation build uses Python 3.13 Alpine before its generated
+site is copied into nginx.
 
 `npm ci` is deliberately strict. If `package.json` and `package-lock.json` do
 not agree, the correct fix is normally to repair and commit the dependency files
 rather than replacing `npm ci` with a looser production install.
 
-When a Docker build fails, identify the exact Dockerfile step first. Dependency
-errors, React compile errors, missing build-context files and Compose YAML errors
-all require different fixes even though they may initially appear under the same
-`docker compose build` command.
+When a Docker build fails, identify the exact service and Dockerfile step first.
+Dependency errors, React compile errors, MkDocs errors, missing build-context
+files and Compose YAML errors all require different fixes even though they may
+initially appear under the same `docker compose build` command.
 
 For Compose itself:
 
@@ -1043,9 +1280,13 @@ For Compose itself:
 docker compose config
 ```
 
-should be used before every build after editing the YAML.
+should be used before every build after editing the YAML or production
+configuration.
 
-Lastly, the current project does not need a Docker build argument for
-`REACT_APP_SERVER_URL` because `client/.env.production` is read during the React
-build. If build arguments are introduced again later, keep that configuration
-path clear and avoid having two different sources supplying conflicting values.
+Lastly, the current production client receives `REACT_APP_SERVER_URL` from the
+root `.env` file through the Compose `build.args` mapping. The client Dockerfile
+then exposes that value before `npm run build`, which makes it part of the
+generated React bundle.
+
+That is the current production configuration path. There is no separate
+`client/.env.production` file which needs to be kept in sync with it.

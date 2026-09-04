@@ -30,6 +30,8 @@ Madiao/
 ├── server/
 ├── docs/
 ├── docker-compose.yaml
+├── Dockerfile
+├── .dockerignore
 ├── mkdocs.yaml
 ├── CHANGELOG.md
 └── .gitignore
@@ -45,7 +47,8 @@ The easiest way of thinking about them is:
 | `client/` | Everything needed for the browser version of the game |
 | `server/` | Multiplayer game logic and Socket.IO server |
 | `docs/` | Documentation website and runbook pages |
-| `docker-compose.yaml` | Runs the production client and server together |
+| `docker-compose.yml` | Runs the production client, server and documentation services together |
+| `Dockerfile` | Builds the MkDocs documentation into its production nginx container |
 | `mkdocs.yaml` | Controls the documentation website |
 | `CHANGELOG.md` | Keeps track of notable changes between versions |
 | `.gitignore` | Tells Git which local/generated files should not be tracked |
@@ -269,8 +272,11 @@ A simplified version looks like this:
 server/
 ├── game/
 │   ├── deck.js
+│   ├── deck.test.js
 │   ├── rules.js
+│   ├── rules.test.js
 │   └── state.js
+│   ├── state.test.js
 │
 ├── shared/
 │   └── constants.js
@@ -388,6 +394,15 @@ The wider sequence around that drink, such as when the notification appears,
 when the animation starts and what happens to the game afterwards, is handled
 elsewhere by the server.
 
+### Game tests
+
+The `game/` folder also contains the automated tests for the more
+self-contained parts of the server logic:
+
+```text
+deck.test.js
+rules.test.js
+state.test.js
 
 ### Server package files
 
@@ -468,20 +483,26 @@ A few root-level files control how the project is deployed and how the
 documentation itself is built.
 
 
-### `docker-compose.yaml`
+### `docker-compose.yml`
 
 The root Compose file is:
 
 ```text
-docker-compose.yaml
+docker-compose.yml
 ```
 
-Its job is to describe the two production services together.
+Its job is to describe the production Docker services together.
 
-At the moment the two services are `server` and `client`.
+At the moment these are:
+
+```text
+server
+client
+docs
+```
 
 It tells Docker where each service should be built from, what its container
-should be called, which ports should be published and any environment settings
+should be called, which ports should be mapped and any environment settings
 which need to be passed in.
 
 This is why deployment commands are normally run from the project root rather
@@ -490,9 +511,15 @@ than from inside `client/` or `server/`.
 
 ### Dockerfiles
 
-Both application folders have their own `Dockerfile` and `.dockerignore`.
+The client and server folders both have their own `Dockerfile` and `.dockerignore`.
 
-The Dockerfile explains how that particular service should be built.
+The documentation is slightly different because its build needs access to both
+`mkdocs.yaml` and the complete `docs/` directory. Its `Dockerfile` therefore lives
+at the project root.
+
+The documentation build uses MkDocs to generate the static site and then copies
+the generated files into an nginx image which becomes the `madiao-docs`
+container.
 
 The `.dockerignore` file is slightly different from `.gitignore`.
 
@@ -551,6 +578,8 @@ docs/
     ├── build-problems.md
     ├── git-problems.md
     ├── rollback.md
+    ├── https-and-reverse-proxy.md
+    ├── changes-after-https.md
     └── quick-reference.md
 ```
 
@@ -622,7 +651,7 @@ The easiest high-level map to remember is:
 | `client/` | What the player sees and interacts with |
 | `server/` | What the game actually decides |
 | `docs/` | How the project is explained and maintained |
-| `docker-compose.yaml` | How the production client and server are managed together |
+| `docker-compose.yml` | How the production client and server are managed together |
 | `mkdocs.yaml` | How the documentation website is organised |
 
 Inside the client, `GameTable.jsx` acts as the main game screen and delegates

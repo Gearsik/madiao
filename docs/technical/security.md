@@ -58,8 +58,6 @@ These files describe how the application works.
 Keeping them in Git means they can be reviewed, versioned, restored, compared
 and deployed consistently, which is exactly what the repository is for.
 
-which is exactly what the repository is for.
-
 
 ### Public addresses are not automatically secrets
 
@@ -161,19 +159,32 @@ Whether the values are sensitive depends on what the values actually contain.
 
 ### Current client environment
 
-The current React production build reads `client/.env.production` and uses
-`REACT_APP_SERVER_URL` from it. The reason this value is applied during the build rather than at client
-runtime is covered in
-[Why the Client Variable Is a Build-Time Setting](environment-configuration.md#why-the-client-variable-is-a-build-time-setting).
+The current React production build receives `REACT_APP_SERVER_URL` from the
+root `.env` file through Docker Compose.
 
-That value becomes part of the browser JavaScript during:
+Compose passes the value into the client image as a build argument:
+
+```yaml title="docker-compose.yml"
+client:
+  build:
+    context: ./client
+    args:
+      REACT_APP_SERVER_URL: ${REACT_APP_SERVER_URL}
+```
+
+The client Dockerfile then makes that value available to the React build before:
 
 ```bash
 npm run build
 ```
 
-so it must be treated as public regardless of whether the source environment
-file itself is committed or ignored.
+The reason this value is applied during the build rather than at client runtime
+is covered in
+[Why the Client Variable Is a Build-Time Setting](environment-configuration.md#why-the-client-variable-is-a-build-time-setting).
+
+Once the React build has finished, the value is part of the browser JavaScript,
+so it must be treated as public regardless of the fact that the root `.env` file
+itself is ignored by Git.
 
 !!! warning "React environment variables are browser-visible"
     Anything stored under a `REACT_APP_*` name can eventually be inspected by
@@ -211,30 +222,46 @@ The current `CLIENT_ORIGIN` value is not a credential.
 It is used by Socket.IO to decide which browser origin is allowed by the CORS
 configuration.
 
-It can therefore be stored as ordinary deployment configuration.
+The production value is kept in the root `.env` file and Docker Compose passes
+it into the running server container through:
 
-However, if the Compose file later starts receiving genuine secrets, those
-values should not simply be written directly into a committed YAML file.
+```yaml title="docker-compose.yml"
+environment:
+  CLIENT_ORIGIN: ${CLIENT_ORIGIN}
+```
+
+The value itself can therefore be treated as ordinary deployment configuration.
+The root `.env` file is still ignored by Git, which also gives the project a
+clear place for future machine-specific or genuinely private server values.
+
+If the Compose file later starts receiving genuine secrets, those values should
+not simply be written directly into a committed YAML file.
 
 
-### Example files
+### Current environment-file pattern
 
-If a project needs private environment values, a useful pattern is:
+Madiao already follows the common pattern of keeping an example file in Git and
+the machine-specific file outside it:
 
 | File | Git treatment | Purpose |
 | --- | --- | --- |
-| `.env.example` | Committed | Variable names and safe example/blank values |
-| `.env` | Ignored | Real machine-specific or private values |
+| `.env.example` | Committed | Expected variable names and safe example values |
+| `.env` | Ignored | Real machine-specific production values |
 
-For example:
+At the moment the two values used there are not credentials, however, keeping
+the real `.env` outside Git still avoids tying the repository to one machine's
+production configuration.
+
+If genuine private values are added later, the same separation becomes even
+more important. For example:
 
 ```env
 DATABASE_URL=
 SESSION_SECRET=
 ```
 
-The example file tells somebody what needs to exist without giving them the
-production credentials.
+The example file can show that those variables need to exist without giving
+anybody the real production credentials.
 
 
 ## SSH Keys and Credentials
@@ -571,6 +598,16 @@ intentionally become browser-visible JavaScript.
 The current client configuration path is described in
 [`REACT_APP_SERVER_URL`](environment-configuration.md#react_app_server_url).
 
+In the current Compose setup this is a normal public build value:
+
+```yaml title="docker-compose.yml"
+args:
+  REACT_APP_SERVER_URL: ${REACT_APP_SERVER_URL}
+```
+
+That is appropriate for a public server address, but the same pattern should not
+be reused for a password, token or other secret.
+
 A frontend build should therefore never be used as a secret-storage mechanism.
 
 
@@ -649,8 +686,11 @@ own or see another player's private hand simply by changing the interface.
 | Dockerfiles | Yes | Deployment definition |
 | `docker-compose.yml` with non-secret config | Yes | Deployment definition |
 | Documentation | Yes | Project documentation |
+| `.env.example` | Yes | Safe configuration template |
+| Root `.env` | No | Machine-specific production configuration |
 | Public server/client address | Usually yes | Not an authentication credential |
 | `REACT_APP_SERVER_URL` | Treat as public | Delivered to browser |
+| `CLIENT_ORIGIN` | Treat as public configuration | Browser origin used by server CORS |
 | SSH public key | Can be shared | Does not grant access by itself |
 | SSH private key | No | Authentication credential |
 | Password | No | Authentication credential |
@@ -670,10 +710,14 @@ The important things to keep out are credentials which grant access, such as
 SSH private keys, passwords, tokens, API secrets and future database
 credentials.
 
-The current React `REACT_APP_SERVER_URL` must always be treated as public
-because it is compiled into JavaScript sent to the player's browser.
+The current production values are supplied through the root `.env` file. Docker
+Compose passes `REACT_APP_SERVER_URL` into the client build and `CLIENT_ORIGIN`
+into the running server container.
 
-The current `CLIENT_ORIGIN` is also configuration rather than a credential.
+`REACT_APP_SERVER_URL` must always be treated as public because it is compiled
+into JavaScript sent to the player's browser.
+
+`CLIENT_ORIGIN` is also configuration rather than a credential.
 
 `.gitignore` is useful for preventing local and private files from being added,
 but it does not remove something which Git is already tracking and it does not

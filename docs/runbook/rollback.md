@@ -48,6 +48,10 @@ The reason for this is covered in
 [In-Memory Game State](../technical/limitations.md#in-memory-game-state) and
 [What Happens When the Server Restarts](../technical/server-runtime-state.md#what-happens-when-the-server-restarts).
 
+The same warning does not apply to `madiao-client` or `madiao-docs`. Replacing
+either of those containers does not restart the Node.js process which owns the
+live game state.
+
 
 ## Failed Deployment
 
@@ -122,7 +126,7 @@ Once:
 docker compose up -d
 ```
 
-has recreated one or both services, the new image may already be live.
+has recreated one or more services, the new image may already be live.
 
 Check:
 
@@ -135,6 +139,7 @@ and then:
 ```bash
 docker logs madiao-server --tail 100
 docker logs madiao-client --tail 100
+docker logs madiao-docs --tail 100
 ```
 
 More log commands, including following the output live, are collected in
@@ -374,6 +379,7 @@ and:
 ```bash
 docker logs madiao-server --tail 50
 docker logs madiao-client --tail 50
+docker logs madiao-docs --tail 50
 ```
 
 
@@ -381,17 +387,23 @@ docker logs madiao-client --tail 50
 
 Do not assume the rollback worked simply because Docker started.
 
-At minimum:
+For a full application rollback, at minimum:
 
 1. open the client;
 2. check the server health page;
-3. create a lobby;
-4. join from a second client;
-5. start the game;
-6. perform one normal play.
+3. open the documentation site;
+4. create a lobby;
+5. join from a second client;
+6. start the game;
+7. perform one normal play.
 
 If the rollback was specifically intended to restore a broken feature, test that
 feature as well.
+
+If only the documentation service was rolled back, there is no reason to run a
+multiplayer test purely because of that change. In that case, open the
+documentation site and check the pages, navigation or styling which were being
+restored.
 
 
 ## Using a Release Tag
@@ -554,6 +566,7 @@ For example:
 | --- | --- |
 | CSS/layout problem | Client only |
 | Server declaration bug | Server |
+| Broken documentation page or MkDocs build | Documentation only |
 
 After switching the repository to the known-good commit, it is technically
 possible to rebuild only the affected service.
@@ -580,6 +593,29 @@ docker compose up -d server
 This replaces the Node server and therefore clears active games.
 
 
+### Documentation rollback
+
+```bash
+docker compose build docs
+docker compose up -d docs
+```
+
+The documentation service is independent from the game itself. Replacing
+`madiao-docs` does not restart the client or server and does not clear active
+lobbies or matches.
+
+This can be useful when the problem is limited to something such as:
+
+- a broken documentation page;
+- an incorrect `mkdocs.yaml` change;
+- broken navigation;
+- documentation styling;
+- a failed or incorrect MkDocs build.
+
+Afterwards, check the documentation site rather than treating the rollback as a
+gameplay deployment.
+
+
 ### Be careful with mixed versions
 
 Running an **old client with a new server**, or a **new client with an old
@@ -601,6 +637,10 @@ Before using a one-service rollback, ask:
 
 If there is any doubt, rolling both services back to the same known commit is
 usually easier to reason about.
+
+The documentation service does not share this client/server contract, so it can
+usually be rolled back independently when the problem is limited to the
+documentation site.
 
 
 ## What Is Lost During Recovery
@@ -710,7 +750,8 @@ check that commit's:
 
 - `docker-compose.yml`;
 - Dockerfiles;
-- client environment setup;
+- root and client environment setup;
+- documentation build setup;
 
 before applying it.
 
@@ -741,9 +782,11 @@ docker ps --filter "name=madiao"
 
 docker logs madiao-server --tail 50
 docker logs madiao-client --tail 50
+docker logs madiao-docs --tail 50
 ```
 
-Then test the game.
+Then test the affected parts of the deployment. For a full rollback, check the
+client, server, documentation site and a small multiplayer flow.
 
 To return later:
 
@@ -772,6 +815,7 @@ Then test again.
 | Game works but new feature is badly broken | Consider known-good commit rollback |
 | Only client UI is broken | Client-only rollback may be enough |
 | Server gameplay logic is broken | Server rollback; active games will be lost |
+| Documentation is broken | Documentation-only rollback may be enough |
 | Client/server contract changed together | Roll both services to the same revision |
 | Unsure which older version worked | Inspect Git history/tags before switching |
 | `CHANGELOG` says a version but tag is missing | Use the actual commit hash |
@@ -808,7 +852,10 @@ docker compose build
 docker compose up -d
 ```
 
-The game should then be tested just like any normal deployment.
+The affected parts of the deployment should then be tested just like any normal
+deployment. A full rollback should include the game and documentation checks,
+while a documentation-only rollback only needs the documentation side to be
+verified.
 
 Once the problem has been fixed properly on `main`, return production with:
 
@@ -828,6 +875,12 @@ git tag --list
 ```
 
 to check which tags actually exist.
+
+When a regression is clearly isolated, the client, server or documentation
+service can also be rebuilt and replaced individually. The main thing to be
+careful about is mixing client and server versions when their Socket.IO contract
+or shared behaviour changed together. The documentation service does not share
+that contract and can normally be recovered independently.
 
 Lastly, any rollback which replaces or restarts `madiao-server` clears active
 games because the current multiplayer state lives only in JavaScript memory.

@@ -1,12 +1,3 @@
-/*
- * Madiao documentation presentation layer.
- *
- * The aim here is not to redesign Material for MkDocs. These overrides only
- * make the existing layout a little wider, calmer and easier to scan while
- * keeping Material's normal responsive behaviour on smaller screens.
- */
-
-
 /* -------------------------------------------------------------------------
    Overall width
    ------------------------------------------------------------------------- */
@@ -144,29 +135,6 @@
     line-height: 1.35;
     margin-top: 0.28em;
     margin-bottom: 0.28em;
-}
-
-
-/* -------------------------------------------------------------------------
-   Code
-   ------------------------------------------------------------------------- */
-
-/*
- * Keep code visually distinct, but use a subtle border rather than a heavy
- * card effect. Material still controls syntax colours for each palette.
- */
-.md-typeset .highlight,
-.md-typeset pre {
-    border-radius: 0.25rem;
-}
-
-.md-typeset .highlight {
-    border: 1px solid var(--md-default-fg-color--lightest);
-    overflow: hidden;
-}
-
-.md-typeset code {
-    border-radius: 0.2rem;
 }
 
 /*

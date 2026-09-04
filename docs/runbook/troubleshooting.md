@@ -58,8 +58,8 @@ browser.
 
 ## Website Does Not Load
 
-If absolutely nothing appears when opening the production client, start outside
-the React code.
+If absolutely nothing appears when opening the production game client, start
+outside the React code.
 
 The first check is:
 
@@ -129,6 +129,125 @@ Move towards:
 
 Check the browser developer console and the nginx/client logs before rebuilding
 randomly.
+
+
+## Documentation Does Not Load
+
+The documentation is served separately from the game, so a documentation problem
+should first be treated as a problem with the `docs` service rather than the
+React client or Node.js server.
+
+The expected container is:
+
+```text
+madiao-docs
+```
+
+and the base deployment exposes:
+
+```text
+host 3002 -> container 80
+```
+
+Start with:
+
+```bash
+docker ps --filter "name=madiao"
+```
+
+If `madiao-docs` is missing, check stopped containers:
+
+```bash
+docker ps -a --filter "name=madiao"
+```
+
+and then read its logs:
+
+```bash
+docker logs madiao-docs --tail 50
+```
+
+
+### Check the correct address
+
+The base documentation site is reached through:
+
+```text
+http://<server-address>:3002
+```
+
+If the client works on `3000` and the server works on `3001`, but the
+documentation does not open on `3002`, the problem is already fairly well
+narrowed down to the documentation container, its port mapping or network access
+to that port.
+
+
+### Check locally from the server
+
+The production machine can test the documentation container directly with:
+
+```bash
+curl -I http://localhost:3002
+```
+
+If this returns a normal HTTP response locally but the same page cannot be opened
+from another computer, check whether port `3002` is allowed through the server
+and hosting-provider firewalls.
+
+If it does not respond locally either, move back towards:
+
+- `madiao-docs` container state;
+- container logs;
+- the documentation image build;
+- nginx inside the documentation container.
+
+
+### Documentation source changed but the live site did not
+
+The documentation is generated when the `docs` image is built.
+
+That means changing a Markdown file and restarting the existing container is not
+enough.
+
+Use:
+
+```bash
+docker compose build docs
+docker compose up -d docs
+```
+
+Then reload the page.
+
+A useful distinction is:
+
+```mermaid
+flowchart TD
+    Git["Updated docs in Git"]
+    Build{"Was the docs image rebuilt?"}
+    Old["No<br/>Old generated site can still be served"]
+    New["Yes<br/>New static site is inside the image"]
+
+    Git --> Build
+    Build -->|"No"| Old
+    Build -->|"Yes"| New
+```
+
+
+### Home page loads but navigation or styling is broken
+
+If the documentation home page opens but individual pages, navigation, Mermaid
+diagrams or styling are wrong, the network path is already working.
+
+At that point check the documentation itself:
+
+- `mkdocs.yaml`;
+- relative links between Markdown files;
+- `docs/stylesheets/extra.css`;
+- the MkDocs build output;
+- browser developer tools for missing assets.
+
+This is different from a container or firewall problem because nginx has already
+proved that it can serve the generated site.
 
 
 ## Client Loads but Cannot Connect to Server
@@ -207,8 +326,8 @@ to decide which browser origin it accepts.
 
 ### Remember the build-time client variable
 
-If `client/.env.production` was corrected after the image was already built,
-restarting the client is not enough.
+If `REACT_APP_SERVER_URL` was corrected in the root `.env` file after the
+client image was already built, restarting the client is not enough.
 
 Use:
 
@@ -1480,7 +1599,8 @@ point.
 
 | Symptom | Start checking |
 | --- | --- |
-| Nothing loads | `madiao-client`, port `3000`, nginx/network |
+| Game client does not load | `madiao-client`, port `3000`, nginx/network |
+| Documentation does not load | `madiao-docs`, port `3002`, docs nginx/network |
 | Website loads but multiplayer does not | `madiao-server`, port `3001`, Socket.IO configuration |
 | Cannot create lobby | `createLobby`, connection, name validation |
 | Cannot join lobby | `joinLobby`, code, gameStarted, 6-player limit |
@@ -1508,13 +1628,22 @@ Troubleshooting Madiao is generally easier when the symptom is traced back
 towards the authoritative state rather than changing whichever component happens
 to be visible.
 
-For deployment-level problems:
+For deployment-level problems, begin with the service which is actually failing.
+The base production deployment contains:
+
+```text
+madiao-client
+madiao-server
+madiao-docs
+```
+
+For the client and server path:
 
 ```mermaid
 flowchart TD
-    Container["Container"]
+    Container["Relevant container"]
     Port["Published port"]
-    Response["Server/client response"]
+    Response["Client/server response"]
     Socket["Socket.IO"]
     Config["Configuration"]
 
@@ -1522,6 +1651,11 @@ flowchart TD
 ```
 
 should be checked before game logic.
+
+The documentation service stops earlier in that chain because it does not use
+Socket.IO or the game environment variables. If `madiao-docs` is running and
+port `3002` responds, any remaining problem is normally inside the generated
+documentation site rather than the multiplayer application.
 
 For gameplay problems:
 

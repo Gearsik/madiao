@@ -30,6 +30,7 @@ docker compose ps
 
 docker logs madiao-server --tail 50
 docker logs madiao-client --tail 50
+docker logs madiao-docs --tail 50
 
 git log -1 --oneline
 ```
@@ -40,6 +41,7 @@ Then test:
 | --- | --- |
 | Client | `http://<server-ip>:3000` |
 | Server health page | `http://<server-ip>:3001` |
+| Documentation | `http://<server-ip>:3002` |
 
 ```mermaid
 flowchart LR
@@ -48,6 +50,13 @@ flowchart LR
 
 For the full process, see
 [Normal Production Updates](production-updates.md).
+
+!!! note "Base deployment addresses"
+    The addresses above describe the base production deployment.
+
+    After the optional HTTPS and reverse-proxy hardening has been applied, the
+    public addresses and Docker port exposure change. Those differences are
+    collected in [Changes After HTTPS](changes-after-https.md).
 
 
 ## Connect to the Server
@@ -99,8 +108,14 @@ For the complete first-time SSH and sudo-user setup, see
 | Purpose | Location |
 | --- | --- |
 | Production repository | `~/madiao` |
+| Root production environment | `~/madiao/.env` |
+| Environment template | `~/madiao/.env.example` |
 | Client | `~/madiao/client` |
 | Server | `~/madiao/server` |
+| Documentation source | `~/madiao/docs` |
+| MkDocs configuration | `~/madiao/mkdocs.yaml` |
+| Documentation Dockerfile | `~/madiao/Dockerfile` |
+| Documentation stylesheet | `~/madiao/docs/stylesheets/extra.css` |
 | Shared timing constants | `~/madiao/server/shared/constants.js` |
 | Compose file | `~/madiao/docker-compose.yml` |
 | Main SSH configuration | `/etc/ssh/sshd_config` |
@@ -246,13 +261,13 @@ Validate Compose:
 docker compose config
 ```
 
-Build both services:
+Build all services:
 
 ```bash
 docker compose build
 ```
 
-Apply/start both services:
+Apply/start all services:
 
 ```bash
 docker compose up -d
@@ -263,6 +278,9 @@ Show Compose service state:
 ```bash
 docker compose ps
 ```
+
+
+### Client
 
 Build only the client:
 
@@ -276,6 +294,15 @@ Apply only the client:
 docker compose up -d client
 ```
 
+Restart the client:
+
+```bash
+docker compose restart client
+```
+
+
+### Server
+
 Build only the server:
 
 ```bash
@@ -288,19 +315,40 @@ Apply only the server:
 docker compose up -d server
 ```
 
-Restart the client:
-
-```bash
-docker compose restart client
-```
-
 Restart the server:
 
 ```bash
 docker compose restart server
 ```
 
-Stop both services without removing the containers:
+
+### Documentation
+
+Build only the documentation:
+
+```bash
+docker compose build docs
+```
+
+Apply only the documentation:
+
+```bash
+docker compose up -d docs
+```
+
+Restart the documentation:
+
+```bash
+docker compose restart docs
+```
+
+A documentation change needs a rebuild because MkDocs generates the static site
+while the documentation image is being built.
+
+
+### All services
+
+Stop all services without removing the containers:
 
 ```bash
 docker compose stop
@@ -322,6 +370,9 @@ docker compose down
     Restarting, recreating or replacing `madiao-server` clears active games
     because the current game state only exists in memory.
 
+    Replacing `madiao-client` or `madiao-docs` does not clear the server's
+    in-memory game state.
+
 For the wider explanation, see
 [Docker Operations](docker-operations.md) and
 [In-Memory Game State](../technical/limitations.md#in-memory-game-state).
@@ -333,6 +384,7 @@ For the wider explanation, see
 | --- | --- |
 | `madiao-client` | `3000 -> 80` |
 | `madiao-server` | `3001 -> 3001` |
+| `madiao-docs` | `3002 -> 80` |
 
 Show running Madiao containers:
 
@@ -351,6 +403,7 @@ Check published ports:
 ```bash
 docker port madiao-client
 docker port madiao-server
+docker port madiao-docs
 ```
 
 Check Docker disk usage:
@@ -372,7 +425,7 @@ docker builder prune
 ```
 
 For safer cleanup guidance, see
-[Cleaning Up Old Docker Resources](docker-operations.md#cleaning-up-old-docker-resources).
+[Cleaning Old Docker Resources](docker-operations.md#cleaning-old-docker-resources).
 
 
 ## Logs
@@ -407,7 +460,19 @@ Follow client logs:
 docker logs -f madiao-client
 ```
 
-Both Compose services:
+Latest documentation logs:
+
+```bash
+docker logs madiao-docs --tail 50
+```
+
+Follow documentation logs:
+
+```bash
+docker logs -f madiao-docs
+```
+
+All Compose services:
 
 ```bash
 docker compose logs --tail 50
@@ -417,6 +482,12 @@ Server only through Compose:
 
 ```bash
 docker compose logs --tail 50 server
+```
+
+Documentation only through Compose:
+
+```bash
+docker compose logs --tail 50 docs
 ```
 
 Follow server logs through Compose:
@@ -445,6 +516,12 @@ Build the server only:
 docker compose build server
 ```
 
+Build the documentation only:
+
+```bash
+docker compose build docs
+```
+
 Show detailed Docker build output:
 
 ```bash
@@ -455,6 +532,12 @@ or:
 
 ```bash
 docker compose build --progress=plain server
+```
+
+or:
+
+```bash
+docker compose build --progress=plain docs
 ```
 
 Rebuild without cache when there is a specific reason to suspect stale layers:
@@ -469,6 +552,12 @@ or:
 docker compose build --no-cache server
 ```
 
+or:
+
+```bash
+docker compose build --no-cache docs
+```
+
 Check disk space:
 
 ```bash
@@ -476,7 +565,7 @@ df -h
 docker system df
 ```
 
-For dependency, React, Dockerfile and Compose failures, see
+For dependency, React, MkDocs, Dockerfile and Compose failures, see
 [Build and Dependency Problems](build-problems.md).
 
 
@@ -488,12 +577,13 @@ Check the server locally from the production machine:
 curl http://localhost:3001
 ```
 
-Check the live endpoints:
+Check the base deployment endpoints:
 
 | Check | Address |
 | --- | --- |
 | Client | `http://<server-ip>:3000` |
 | Server health page | `http://<server-ip>:3001` |
+| Documentation | `http://<server-ip>:3002` |
 
 If the client loads but multiplayer does not, check `REACT_APP_SERVER_URL` and
 `CLIENT_ORIGIN`.
@@ -505,14 +595,72 @@ docker compose config
 docker logs madiao-server --tail 50
 ```
 
+If the documentation does not load, use:
+
+```bash
+docker logs madiao-docs --tail 50
+docker port madiao-docs
+```
+
 For the full checks, see
 [Basic Health Checks](health-checks.md) and
 [Troubleshooting by Problem](troubleshooting.md).
 
 
+## Environment Configuration
+
+Production configuration:
+
+```text
+~/madiao/.env
+```
+
+Template stored in Git:
+
+```text
+~/madiao/.env.example
+```
+
+Main application variables:
+
+```env
+REACT_APP_SERVER_URL=http://<server-address>:3001
+CLIENT_ORIGIN=http://<server-address>:3000
+```
+
+Check the resolved Compose configuration:
+
+```bash
+docker compose config
+```
+
+Remember:
+
+| Variable | Applied when |
+| --- | --- |
+| `REACT_APP_SERVER_URL` | Client image build |
+| `CLIENT_ORIGIN` | Server container runtime |
+
+If `REACT_APP_SERVER_URL` changes:
+
+```bash
+docker compose build client
+docker compose up -d client
+```
+
+If `CLIENT_ORIGIN` changes:
+
+```bash
+docker compose up -d server
+```
+
+For the full explanation, see
+[Environment and Configuration](../technical/environment-configuration.md).
+
+
 ## Basic Multiplayer Test
 
-After a deployment:
+After an application deployment:
 
 1. Open the client.
 2. Create a lobby.
@@ -525,11 +673,86 @@ After a deployment:
 
 If the deployment changed a particular feature, test that feature as well.
 
+A documentation-only update does not require a multiplayer test unless the game
+services were also changed.
+
+
+## Documentation Site
+
+### Local development
+
+From the repository root on Windows PowerShell, activate the documentation
+virtual environment:
+
+```powershell
+.\.venv-docs\Scripts\Activate.ps1
+```
+
+Start the local documentation site:
+
+```bash
+mkdocs serve
+```
+
+The default local address is:
+
+```text
+http://127.0.0.1:8000/
+```
+
+Build the static documentation site manually:
+
+```bash
+mkdocs build
+```
+
+
+### Production container
+
+Build the production documentation image:
+
+```bash
+docker compose build docs
+```
+
+Apply it:
+
+```bash
+docker compose up -d docs
+```
+
+Check the container:
+
+```bash
+docker compose ps
+```
+
+Check its logs:
+
+```bash
+docker logs madiao-docs --tail 50
+```
+
+Base production address:
+
+```text
+http://<server-ip>:3002
+```
+
+Files which commonly affect the documentation site:
+
+```text
+docs/
+mkdocs.yaml
+Dockerfile
+docs/stylesheets/extra.css
+```
+
 
 ## Rollback
 
 !!! warning "A server rollback resets active matches"
-    Rolling back `madiao-server` recreates/restarts the server process, so the
+    Rolling back `madiao-server` recreates or restarts the server process, so the
     current in-memory lobbies and games are lost.
 
 Check the current revision first:
@@ -791,35 +1014,12 @@ Relevant configuration files:
 | `/etc/apt/apt.conf.d/50unattended-upgrades` | Controls unattended-upgrade behaviour |
 
 
-## Documentation Site
-
-From the repository root on Windows PowerShell, activate the documentation
-virtual environment:
-
-```powershell
-.\.venv-docs\Scripts\Activate.ps1
-```
-
-Start the local documentation site:
-
-```bash
-mkdocs serve
-```
-
-The default local address is `http://127.0.0.1:8000/`.
-
-Build the static documentation site:
-
-```bash
-mkdocs build
-```
-
-
 ## Quick Problem Index
 
 | Problem | Start here |
 | --- | --- |
 | Website does not load | [Website Does Not Load](troubleshooting.md#website-does-not-load) |
+| Documentation does not load | [Basic Health Checks](health-checks.md#is-the-documentation-running) |
 | Client loads but multiplayer does not | [Client Loads but Cannot Connect to Server](troubleshooting.md#client-loads-but-cannot-connect-to-server) |
 | Lobby cannot be created | [Lobby Cannot Be Created](troubleshooting.md#lobby-cannot-be-created) |
 | Player cannot join | [Player Cannot Join a Lobby](troubleshooting.md#player-cannot-join-a-lobby) |
@@ -832,17 +1032,30 @@ mkdocs build
 | Build fails | [Build and Dependency Problems](build-problems.md) |
 | `git pull` fails | [`git pull` Cannot Continue](git-problems.md#git-pull-cannot-continue) |
 | Deployment needs reverting | [Recovery and Rollback](rollback.md) |
+| HTTPS or reverse proxy problem | [HTTPS and Reverse Proxy](https-and-reverse-proxy.md) |
 
 
 ## Things Worth Remembering
 
 - The Node server is authoritative for the actual game state.
-- The client and server are separate services on ports `3000` and `3001`.
+- The game itself is made out of the client and server.
+- The base production deployment runs three Compose services: `client`, `server`
+  and `docs`.
+- The base deployment uses ports `3000`, `3001` and `3002`.
+- `madiao-docs` serves the generated MkDocs site and does not take part in game
+  state or Socket.IO communication.
 - `REACT_APP_SERVER_URL` is applied when the React client is built.
 - `CLIENT_ORIGIN` is read by the server at runtime.
-- `docker compose build` creates an image; it does not replace the running container.
-- `docker compose up -d` applies/recreates the service when needed.
+- The production application values come from the root `.env` file.
+- `docker compose build` creates an image; it does not replace the running
+  container.
+- `docker compose up -d` applies or recreates the service when needed.
+- Documentation changes require the `docs` image to be rebuilt.
 - Restarting or replacing `madiao-server` clears active games.
+- Restarting or replacing `madiao-client` or `madiao-docs` does not clear the
+  server's active game state.
 - Refreshing the browser is not currently a supported player reconnect.
 - Check `git status` before pulling on production.
 - When troubleshooting gameplay, check the server state before changing the UI.
+- HTTPS and reverse-proxy hardening is documented separately and changes the
+  public addresses used after the base deployment is working.

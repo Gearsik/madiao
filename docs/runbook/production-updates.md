@@ -5,8 +5,8 @@ much simpler.
 
 There is no need to clone the repository again, recreate the Docker setup or
 repeat all of the first-time preparation. The production server already has a
-working copy of the project and Docker already knows how both services should
-be built.
+working copy of the project and Docker already knows how the production
+services should be built.
 
 A normal update is therefore mostly a case of bringing the production repository
 up to date, rebuilding the images and replacing the running containers with the
@@ -22,7 +22,7 @@ flowchart TD
     Build["Build new images"]
     Replace["Replace the running containers"]
     Status["Check container status and logs"]
-    Test["Test the updated game"]
+    Test["Test the updated deployment"]
 
     Check --> Pull --> Config --> Build --> Replace --> Status --> Test
 ```
@@ -41,33 +41,50 @@ file was changed or that the Compose configuration no longer parses correctly.
     running game sessions.
 
     There is also no reconnection system which can restore those players
-    afterwards, so production updates should preferably be done when nobody is
-    in the middle of a game.
+    afterwards, so production updates which replace the server should preferably
+    be done when nobody is in the middle of a game.
+
+The important part here is that not every production update has the same effect.
+
+Updating the client or documentation does not remove the server's in-memory
+game state.
+
+Replacing the server does.
+
+A useful way of looking at it is:
+
+| Service replaced | Effect on active games |
+| --- | --- |
+| `madiao-client` | Server-side games remain running |
+| `madiao-server` | Active lobbies and games are lost |
+| `madiao-docs` | No effect on active games |
 
 The actual Docker commands only take a relatively short amount of time once the
-images are built, but from the point of view of an active player the server
+images are built, but from the point of view of an active player a server
 replacement is still effectively a complete game reset.
 
-A useful way of thinking about an update is:
+Another useful distinction is:
 
 ```mermaid
 flowchart TD
     Build["docker compose build"]
-    Safe["Old containers keep running<br/>active games are unaffected"]
+    Safe["Existing containers keep running"]
 
     Up["docker compose up -d"]
-    Replace["madiao-server may be recreated"]
+    Replace["Services which changed may be recreated"]
+    Server{"Was madiao-server replaced?"}
     Lost["Active in-memory games are lost"]
+    Keep["Existing server state remains"]
 
     Build --> Safe
-    Up --> Replace --> Lost
+    Up --> Replace --> Server
+    Server -->|"Yes"| Lost
+    Server -->|"No"| Keep
 ```
 
-This distinction is important.
+Building a new image does not by itself restart the live application.
 
-Building a new image does not by itself restart the live game.
-
-The interruption happens when the running container is replaced.
+The interruption happens when a running container is actually replaced.
 
 
 ## Entering the Production Repository
@@ -84,8 +101,11 @@ It is worth checking the current location before running Git or Docker commands:
 pwd
 ```
 
-The expected location should be the active production clone, for example
-`/home/<user>/madiao`.
+The expected location should be the active production clone, for example:
+
+```text
+/home/<user>/madiao
+```
 
 This matters because an older clone or test folder may still exist elsewhere on
 the server.
@@ -112,7 +132,11 @@ Your branch is up to date with 'origin/main'.
 nothing to commit, working tree clean
 ```
 
-The wording may vary slightly, but the important part is `working tree clean`.
+The wording may vary slightly, but the important part is:
+
+```text
+working tree clean
+```
 
 The production repository should normally match the version stored in Git.
 
@@ -190,25 +214,34 @@ This step may feel repetitive because the Compose file often has not changed.
 
 It is still worth doing.
 
-A code update can include changes to:
+A code or documentation update can include changes to:
 
 - `docker-compose.yml`;
 - Dockerfiles;
 - production configuration;
 - service names;
-- port mappings.
+- port mappings;
+- the documentation build.
 
 and `docker compose config` is a cheap way of catching a broken Compose file
 before starting a longer build.
 
-For the current Madiao setup the important values should still correspond to:
+For the base Madiao deployment, the three services should still correspond to:
 
 | Service | Expected mapping |
 | --- | --- |
-| `madiao-client` | host `3000` → container `80` |
-| `madiao-server` | host `3001` → container `3001` |
+| `client` | host `3000` → container `80` |
+| `server` | host `3001` → container `3001` |
+| `docs` | host `3002` → container `80` |
 
-The server should also receive the expected `CLIENT_ORIGIN`.
+The resolved configuration should also contain the expected application
+configuration.
+
+In particular:
+
+- the client build should receive `REACT_APP_SERVER_URL`;
+- the server should receive `CLIENT_ORIGIN`;
+- the documentation service should use the project root as its build context.
 
 If the command reports an error, stop there and fix the configuration before
 continuing.
@@ -222,7 +255,15 @@ Build the new images with:
 docker compose build
 ```
 
-This processes both the client and server services.
+This processes the production services defined in the Compose file.
+
+At the moment those are:
+
+```text
+client
+server
+docs
+```
 
 Docker will normally reuse unchanged build layers, so later builds may be much
 quicker than the first deployment.
@@ -234,11 +275,27 @@ For example:
 
 | Change | Likely rebuild effect |
 | --- | --- |
-| CSS or React source | Client image rebuild |
-| `server/index.js` | Server image rebuild |
-| `package-lock.json` | Dependency-installation layer may rebuild |
+| CSS or React source | Client image |
+| `server/index.js` or game logic | Server image |
+| Client `package-lock.json` | Client dependency layer |
+| Server `package-lock.json` | Server dependency layer |
+| Markdown in `docs/` | Documentation image |
+| `mkdocs.yaml` | Documentation image |
+| Root documentation Dockerfile | Documentation image |
 
-The important thing to remember is that a successful:
+The documentation image has its own build step because MkDocs converts the
+Markdown files into a static website before nginx serves them.
+
+This means a changed Markdown file is similar to changed application source in
+one important way:
+
+> restarting the existing container is not enough.
+
+The documentation image needs to be rebuilt before the generated site changes.
+
+The same general rule applies to the client.
+
+A successful:
 
 ```bash
 docker compose build
@@ -253,9 +310,10 @@ This is useful because it gives us a natural checkpoint.
 
 !!! tip "A failed build does not automatically break the live version"
     Until `docker compose up -d` replaces a service, the existing production
-    containers can continue running the previous image. A build failure is
-    therefore a reason to stop and fix the build, not to start changing the live
-    containers.
+    containers can continue running the previous image.
+
+    A build failure is therefore a reason to stop and fix the build, not to
+    start changing the live containers.
 
 If the build fails, the existing production containers have not automatically
 been replaced and may still be running the previous working version.
@@ -271,7 +329,7 @@ points, including [`npm ci` Failure](build-problems.md#npm-ci-failure),
 
 ## Replacing the Running Containers
 
-Once both images have built successfully, apply them with:
+Once the images have built successfully, apply them with:
 
 ```bash
 docker compose up -d
@@ -283,8 +341,13 @@ images.
 If a service needs to be recreated, Compose replaces that container and starts
 the new version.
 
-The normal result should leave `madiao-client` and `madiao-server` running
-again.
+The normal result should leave all three production containers running:
+
+```text
+madiao-client
+madiao-server
+madiao-docs
+```
 
 This is the point where the earlier warning about active games becomes relevant.
 
@@ -292,6 +355,9 @@ If `madiao-server` is recreated, all of the in-memory Maps used for lobbies,
 game state, timers and socket/lobby links are created again from scratch.
 
 Any active match therefore disappears.
+
+Replacing only `madiao-client` or `madiao-docs` does not clear that server-side
+state.
 
 For that reason it is usually better to think of:
 
@@ -316,9 +382,21 @@ Immediately after the update, check the containers:
 docker ps --filter "name=madiao"
 ```
 
-Both should show as running.
+All three should show as running.
 
-The expected services are `madiao-client` and `madiao-server`.
+The expected containers are:
+
+```text
+madiao-client
+madiao-server
+madiao-docs
+```
+
+The same deployment can also be checked with:
+
+```bash
+docker compose ps
+```
 
 If one is missing, use:
 
@@ -331,7 +409,12 @@ This also shows stopped containers.
 A service which starts and crashes immediately may disappear from normal
 `docker ps`, while still being visible in `docker ps -a`.
 
-This is usually much more useful than repeatedly running `docker compose up -d`
+This is usually much more useful than repeatedly running:
+
+```bash
+docker compose up -d
+```
+
 and hoping the next attempt behaves differently.
 
 
@@ -351,13 +434,22 @@ Then check the client:
 docker logs madiao-client --tail 50
 ```
 
-For nginx there may not be very much output until requests reach it.
+and the documentation container:
 
-If either service has a startup problem, the logs are normally the next place to
-look. More log commands, including following output live, are collected in
+```bash
+docker logs madiao-docs --tail 50
+```
+
+For the two nginx containers there may not be very much output until requests
+reach them.
+
+If one service has a startup problem, the logs are normally the next place to
+look.
+
+More log commands, including following output live, are collected in
 [Viewing Logs](docker-operations.md#viewing-logs).
 
-The important order is:
+The useful order is:
 
 ```mermaid
 flowchart TD
@@ -375,11 +467,34 @@ rather than immediately changing unrelated files.
 
 A deployment should be checked after the containers are replaced.
 
-At minimum, confirm that the client still loads at
-`http://<server-address>:3000` and that the server still responds at
-`http://<server-address>:3001`.
+For the base deployment, confirm that:
 
-After that, perform a small multiplayer check.
+```text
+http://<server-address>:3000
+```
+
+still loads the client,
+
+```text
+http://<server-address>:3001
+```
+
+still reaches the Node.js server,
+
+and:
+
+```text
+http://<server-address>:3002
+```
+
+still loads the documentation.
+
+The amount of testing required after that depends on what actually changed.
+
+
+### Application update
+
+If the client or server changed, perform a small multiplayer check.
 
 For a routine update this does not need to be a full match.
 
@@ -408,9 +523,35 @@ For example:
 | Game-over behaviour | Test a short match if practical |
 | Lobby behaviour | Specifically test create/join/start |
 
-The general multiplayer check proves that the deployment still works.
+The general multiplayer check proves that the application still works.
 
 The targeted test proves that the feature which was actually changed works.
+
+
+### Documentation update
+
+If only the documentation changed, there is no reason to perform a complete
+multiplayer test purely because of that change.
+
+Instead, check:
+
+```text
+http://<server-address>:3002
+```
+
+and open the pages which were edited.
+
+It is also worth checking:
+
+- navigation;
+- code blocks;
+- Mermaid diagrams;
+- internal links;
+- custom styling.
+
+The documentation container is independent from the game containers, so a
+documentation-only deployment can be tested without interrupting an active
+match.
 
 
 ## Confirming the Correct Git Version Is Live
@@ -431,8 +572,9 @@ For example:
 abc1234 Fix challenge result timing
 ```
 
-This does not prove by itself that Docker rebuilt every service correctly, but
-it proves which source version exists in the production repository.
+This does not prove by itself that Docker rebuilt every required service
+correctly, but it proves which source version exists in the production
+repository.
 
 Combined with:
 
@@ -454,61 +596,99 @@ flowchart TD
 
 If something unexpected appears in production, knowing the deployed commit
 makes it much easier to compare that version with Git history or a previous
-release. If the new version needs to be backed out, the full procedure is covered
-in [Recovery and Rollback](rollback.md).
+release.
+
+If the new version needs to be backed out, the full procedure is covered in
+[Recovery and Rollback](rollback.md).
 
 
 ## Updating Only One Service
 
-Most normal deployments can simply rebuild both services:
+Most normal deployments can simply rebuild the complete Compose project:
 
 ```bash
 docker compose build
 docker compose up -d
 ```
 
-For a small project this is straightforward and reduces the chance of forgetting
-that a change affected both sides.
+For a project of this size this is straightforward and reduces the chance of
+forgetting that a change affected more than one service.
 
-However, Docker Compose can also rebuild a single service when there is a good
-reason to do so.
+However, Docker Compose can also rebuild a single service when the change is
+clearly isolated.
 
-For example:
+
+### Client-only update
+
+For a client-only change:
 
 ```bash
 docker compose build client
 docker compose up -d client
 ```
 
-or:
+This can be useful for changes such as:
+
+- CSS;
+- layout;
+- React components;
+- images;
+- client build configuration.
+
+Replacing only the client does not remove the server's active in-memory games.
+
+
+### Server-only update
+
+For a server-only change:
 
 ```bash
 docker compose build server
 docker compose up -d server
 ```
 
-This can be useful for a clearly isolated change.
+This can be useful for changes such as:
 
-A CSS-only adjustment, for example, does not require a new Node server image.
+- lobby handling;
+- game rules;
+- Socket.IO handlers;
+- server timers;
+- server dependencies.
 
-There is one important operational difference though.
+Replacing the server clears all active lobbies and games.
 
-Replacing only the client does not remove the server's in-memory games.
 
-Replacing the server does.
+### Documentation-only update
 
-So the operational difference is:
+For a documentation-only change:
+
+```bash
+docker compose build docs
+docker compose up -d docs
+```
+
+This is useful for changes to:
+
+- files inside `docs/`;
+- `mkdocs.yaml`;
+- documentation stylesheets;
+- the root documentation Dockerfile.
+
+This is one of the safest isolated updates because replacing `madiao-docs` does
+not affect the client, server or active game state.
+
+The operational difference is therefore:
 
 | Update | Effect on active games |
 | --- | --- |
-| Client-only update | Active server games can continue |
-| Server update | In-memory server state resets |
+| Client-only | Active server games can continue |
+| Server | Active in-memory games are lost |
+| Documentation-only | No effect on active games |
 
 This does not mean every update should automatically be split into individual
 services.
 
-It simply gives us an option when the change is clearly isolated and avoiding an
-unnecessary server restart is useful.
+It simply gives us an option when the change is clearly isolated.
 
 
 ## Normal Update Command Sequence
@@ -529,11 +709,18 @@ docker ps --filter "name=madiao"
 
 docker logs madiao-server --tail 50
 docker logs madiao-client --tail 50
+docker logs madiao-docs --tail 50
 
 git log -1 --oneline
 ```
 
-Then test the client and basic multiplayer flow.
+Then test the parts of the deployment which were affected.
+
+For a normal application update, that means checking the client, server and a
+basic multiplayer flow.
+
+For a documentation-only update, checking the documentation site and the edited
+pages is normally enough.
 
 The sequence is intentionally simple.
 
@@ -547,8 +734,8 @@ Each step answers one useful question:
 | `docker compose build` | Can the new version be built successfully? |
 | `docker compose up -d` | Is the new version now running? |
 | `docker ps` | Did the containers stay up? |
-| `docker logs` | Did the applications start normally? |
-| Browser/game test | Does the actual product work? |
+| `docker logs` | Did the services start normally? |
+| Browser/game/docs test | Does the part which changed actually work? |
 
 That is generally enough for a normal Madiao production update.
 
@@ -569,23 +756,37 @@ flowchart TD
     Up["docker compose up -d"]
     Containers["Check containers"]
     Logs["Check logs"]
-    Test["Test the game"]
+    Test["Test the affected services"]
 
     Status --> Pull --> Config --> Build --> Up --> Containers --> Logs --> Test
 ```
 
-The most important operational detail is the difference between building and
-replacing the containers.
+The base production deployment currently contains three Docker services:
+
+```text
+madiao-client
+madiao-server
+madiao-docs
+```
+
+The client and server make up the actual game, while the documentation container
+serves the generated MkDocs site alongside them.
+
+The most important operational detail is still the difference between building
+and replacing containers.
 
 `docker compose build` prepares new images but does not by itself remove the
-running game.
+running services.
 
-`docker compose up -d` may recreate the server container and therefore clears
-all active in-memory lobbies and matches.
+`docker compose up -d` may recreate whichever containers need to change.
 
-For that reason server deployments should preferably happen when nobody is
-playing.
+If that includes `madiao-server`, all active in-memory lobbies and matches are
+cleared.
+
+Replacing the client or documentation container does not have that same effect.
 
 Lastly, the production repository should normally remain clean and match the
-version stored in Git. If unexpected tracked changes appear on the server, work
-out what they are before pulling or overwriting anything.
+version stored in Git.
+
+If unexpected tracked changes appear on the server, work out what they are
+before pulling or overwriting anything.

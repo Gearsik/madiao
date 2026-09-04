@@ -125,14 +125,18 @@ as the Node.js server directly.
 
 The production version works slightly differently.
 
-Rather than manually starting both applications every time, the project packages
-them into two separate Docker containers.
+Rather than manually starting both applications every time, the production
+deployment packages the client and server into separate Docker containers.
 
-These are:
+The documentation is also built into its own container so that the MkDocs site
+can be served alongside the application.
+
+The three production containers are:
 
 ```text
 madiao-client
 madiao-server
+madiao-docs
 ```
 
 The client container does not run the React development server used while
@@ -143,20 +147,31 @@ served using nginx.
 
 The server container runs the Node.js game server normally.
 
+The documentation container works in a similar way to the client container.
+
+MkDocs first builds the Markdown documentation into a static website, after
+which nginx serves those generated files from the container.
+
 At a basic level, the production setup looks like this:
 
 ```mermaid
-flowchart LR
+flowchart TD
     Browser["Player's browser"]
 
     subgraph Host["Production server"]
         Client["madiao-client<br/>nginx<br/>container :80"]
         Server["madiao-server<br/>Node.js / Express / Socket.IO<br/>container :3001"]
+        Documentation["madiao-docs<br/>nginx<br/>container :80"]
     end
 
     Browser -->|"HTTP :3000"| Client
     Browser -->|"Socket.IO :3001"| Server
+    Browser -->|"HTTP :3002"| Documentation
 ```
+The documentation container does not sit between the client and server.
+
+It is simply another service running beside them and has no involvement in the
+game's Socket.IO communication or state.
 
 One small thing worth pointing out here is that the Socket.IO traffic does not
 need to travel through the client container.
@@ -185,18 +200,19 @@ There is nothing necessarily wrong with doing that for a small project, however,
 it would mean that more of the setup depends on whatever happens to be installed
 on that particular machine.
 
-Instead, the project defines the environments needed by the client and server
+Instead, the project defines the environments needed by the client, server and the documentation
 inside their Dockerfiles.
 
-The two containers currently have separate jobs:
+The three containers currently have separate jobs:
 
 | Container | Main purpose | Host Port | Container Port |
 | --- | --- | --- | --- |
 | `madiao-client` | Serves the built React application through nginx | `3000` | `80` |
 | `madiao-server` | Runs the Node.js, Express and Socket.IO server | `3001` | `3001` |
+| `madiao-docs` | Serves the generated MkDocs documentation through nginx | `3002` | `80` |
 
-Docker Compose then gives us one place from which both containers can be built
-and managed together.
+Docker Compose then gives us one place from which the production services can
+be built and managed together.
 
 That is why commands such as:
 
@@ -211,25 +227,29 @@ docker compose up -d
 ```
 
 can deal with the entire application instead of us having to manually remember
-how both containers were originally created.
+how each container was originally created.
 
 The practical Docker commands and container-management tasks are covered in
 [Docker Operations](../runbook/docker-operations.md), so there is not much point
 going too far into them here.
 
-For now, the important thing to remember is simply that the production version
-of Madiao consists of two separate containers.
+For now, the important thing to remember is simply that the production
+deployment contains three separate containers.
 
-If one stops working, the other one does not automatically stop with it.
+The client and server still make up the actual game, while the documentation
+container exists alongside them.
+
+If one service stops working, the others do not automatically stop with it.
 
 
 ## Ports and Network Flow
 
-The production version currently exposes two ports:
+The base production deployment uses three ports:
 
 ```text
 3000 - client
 3001 - server
+3002 - documentation
 ```
 
 On the production server, port `3000` is forwarded to port `80` inside the
@@ -298,6 +318,15 @@ If nothing loads at all, the client side is probably worth checking first.
 
 If the website loads but multiplayer functionality does not work, the server or
 the connection between the browser and server becomes much more interesting.
+
+The documentation service is independent from the two application connections
+described below, so the normal game network flow can still be thought of as two
+separate steps.
+
+```markdown
+Port `3002` is forwarded to port `80` inside the documentation container, where
+nginx serves the static MkDocs site.
+```
 
 
 ## Client and Server Communication
@@ -546,13 +575,17 @@ around a fairly simple client/server structure.
 The React client is responsible mainly for interaction and presentation, while
 the Node.js server remains responsible for the actual game.
 
-In production, both sides run inside their own Docker containers:
+In production, both sides of the game run inside their own Docker containers:
 
 ```text
 madiao-client :3000
 madiao-server :3001
 ```
+The documentation is served separately through a third container:
 
+```text
+madiao-docs :3002
+```
 The browser first receives the React application from nginx and then the React
 application creates a separate Socket.IO connection to the Node server.
 
