@@ -4,7 +4,7 @@ Madiao is a browser-based **2–6 player online multiplayer card game** built wi
 
 The game is inspired by the Chinese card game Madiao, with bluffing, declarations and challenges forming the core gameplay loop. To keep things fair and reduce cheating opportunities, the server is authoritative over the game state: it owns player hands, validates actions, resolves challenges, controls timers and decides when a game has been won, while clients receive only the public state and their own private hand.
 
-> [**Technical documentation**](http://178.105.59.4:3002/)
+> [**Technical documentation**](https://178.105.59.4/docs)
 
 <!-- Here I will add a GIF of the game being played once I get it done. -->
 <!-- Example: ![Madiao game table](docs/assets/madiao-game-table.png) -->
@@ -170,7 +170,7 @@ And that's enough.
 For more detailed explanations, please use the documentation linked below.
 
 ## Documentation
-[**Technical documentation**](http://178.105.59.4:3002/)
+[**Technical documentation**](https://178.105.59.4/docs)
 
 The documentation source is stored in [`docs/`](docs/) and configured through [`mkdocs.yaml`](mkdocs.yaml).
 
