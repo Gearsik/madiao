@@ -671,7 +671,7 @@ The easiest high-level map to remember is:
 | `client/` | What the player sees and interacts with |
 | `server/` | What the game actually decides |
 | `docs/` | How the project is explained and maintained |
-| `compose.yaml` | How the production client and server are managed together |
+| `compose.yaml` | How the production client, server and documentation services are managed together |
 | `mkdocs.yaml` | How the documentation website is organised |
 
 Inside the client, `GameTable.jsx` acts as the main game screen and delegates
