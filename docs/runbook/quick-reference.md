@@ -117,7 +117,7 @@ For the complete first-time SSH and sudo-user setup, see
 | Documentation Dockerfile | `~/madiao/Dockerfile` |
 | Documentation stylesheet | `~/madiao/docs/stylesheets/extra.css` |
 | Shared timing constants | `~/madiao/server/shared/constants.js` |
-| Compose file | `~/madiao/docker-compose.yml` |
+| Compose file | `~/madiao/compose.yaml` |
 | Main SSH configuration | `/etc/ssh/sshd_config` |
 | SSH override directory | `/etc/ssh/sshd_config.d/` |
 | User SSH directory | `/home/<username>/.ssh/` |

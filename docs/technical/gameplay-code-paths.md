@@ -46,7 +46,7 @@ The game begins from the waiting room.
 
 The host presses the Start Game button in `LobbyRoom.jsx`, which sends:
 
-```js title="client/src/components/LobbyRoom/LobbyRoom.jsx"
+```js title="client/src/components/lobby/LobbyRoom.jsx"
 socket.emit('startGame');
 ```
 

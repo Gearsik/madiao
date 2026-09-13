@@ -216,7 +216,7 @@ It is still worth doing.
 
 A code or documentation update can include changes to:
 
-- `docker-compose.yml`;
+- `compose.yaml`;
 - Dockerfiles;
 - production configuration;
 - service names;

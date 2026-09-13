@@ -2,6 +2,23 @@
 
 All notable changes to Madiao will be documented here.
 
+## [0.3.0] - 2026-09-12
+
+### Added
+- MkDocs technical documentation and production runbook.
+- Dedicated Docker documentation service.
+- Server-side unit tests covering deck, rules and game-state logic.
+- HTTPS production access through nginx and Let's Encrypt.
+
+### Changed
+- Bound the client, server and documentation services to localhost behind the host nginx reverse proxy.
+- Updated production configuration for HTTPS and proxied Socket.IO traffic.
+- Expanded deployment, Docker, troubleshooting, rollback, security and production-hardening documentation.
+
+### Fixed
+- Corrected production documentation and configuration references after the move from direct ports to HTTPS.
+- Cleaned up final documentation structure and cross-file inconsistencies.
+
 ## [0.2.0] - 2026-08-25
 
 ### Added

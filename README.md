@@ -4,7 +4,7 @@ Madiao is a browser-based **2–6 player online multiplayer card game** built wi
 
 The game is inspired by the Chinese card game Madiao, with bluffing, declarations and challenges forming the core gameplay loop. To keep things fair and reduce cheating opportunities, the server is authoritative over the game state: it owns player hands, validates actions, resolves challenges, controls timers and decides when a game has been won, while clients receive only the public state and their own private hand.
 
-> [**Technical documentation**](http://178.105.59.4:3002/)
+> [**Technical documentation**](https://178.105.59.4/docs)
 
 <!-- Here I will add a GIF of the game being played once I get it done. -->
 <!-- Example: ![Madiao game table](docs/assets/madiao-game-table.png) -->
@@ -68,7 +68,7 @@ The client is responsible for presentation and player input. The Node.js server 
 - drinking and elimination
 - win conditions and rematches
 
-For production, the application is split into two containers:
+The game itself is split into separate client and server containers. The production Compose stack also includes a third container for the project documentation.
 
 ```text
 Browser
@@ -170,7 +170,7 @@ And that's enough.
 For more detailed explanations, please use the documentation linked below.
 
 ## Documentation
-[**Technical documentation**](http://178.105.59.4:3002/)
+[**Technical documentation**](https://178.105.59.4/docs)
 
 The documentation source is stored in [`docs/`](docs/) and configured through [`mkdocs.yaml`](mkdocs.yaml).
 
@@ -181,7 +181,7 @@ madiao/
 ├── client/                 React browser application
 ├── server/                 Node.js/Socket.IO game server
 ├── docs/                   MkDocs technical documentation and runbook
-├── docker-compose.yml      Production client/server orchestration
+├── compose.yaml            Production service orchestration
 ├── mkdocs.yaml             Documentation-site configuration
 ├── CHANGELOG.md            Notable fixes and project changes
 └── .env.example            Example deployment configuration
@@ -199,7 +199,7 @@ Madiao was intentionally kept fairly small and currently has several known opera
 
 ## Project Status
 
-Madiao is feature-complete for its original portfolio scope and is currently at version `0.2.0`.
+Madiao is feature-complete for its original portfolio scope and is currently at version `0.3.0`.
 
 The main gameplay, multiplayer flow, Docker deployment and project documentation are complete. 
 Future work would focus primarily on automated testing, reconnection/persistent sessions and further deployment improvements rather than expanding the game into a larger product.

@@ -1,10 +1,10 @@
-site_name: Madiao Documentation
+site_name: Projects Documentation
 
 theme:
   name: material
 
-  # Dark mode is the default, but the light palette is still available from
-  # the toggle next to search.
+  #dark mode is the default, but the light palette is still available from
+  #the toggle next to search.
   palette:
     - scheme: slate
       primary: black
@@ -20,17 +20,18 @@ theme:
         icon: material/brightness-4
         name: Switch to dark mode
 
-  # Keeping these explicit makes the documentation typography predictable.
+  #keeping these explicit makes the documentation typography predictable.
   font:
     text: Roboto
     code: Roboto Mono
 
   features:
-    # navigation.sections is intentionally not enabled. Without it, the
-    # top-level documentation groups remain collapsible in the left sidebar.
+  #render the main project groups as clear navigation sections.
+  #this visually separates Madiao from the PoE Tracker documentation.
     - navigation.top
     - navigation.tracking
     - navigation.footer
+    - navigation.sections
     - toc.follow
     - content.code.copy
     - search.suggest
@@ -58,41 +59,49 @@ extra_css:
   - stylesheets/extra.css
 
 nav:
-  - Home: index.md
+  - Madiao:
+    - Home: index.md
 
-  - Overview:
-      - Project and Runtime Overview: technical/runtime-overview.md
-      - Repository and File Structure: technical/repository-structure.md
-      - Environment and Configuration: technical/environment-configuration.md
+    - Overview:
+        - Project and Runtime Overview: technical/runtime-overview.md
+        - Repository and File Structure: technical/repository-structure.md
+        - Environment and Configuration: technical/environment-configuration.md
 
-  - Deployment and Docker:
-      - Server Setup and Administration: runbook/server-setup-and-administration.md
-      - First-Time Production Setup: runbook/first-time-setup.md
-      - Normal Production Updates: runbook/production-updates.md
-      - Docker Operations: runbook/docker-operations.md
+    - Deployment and Docker:
+        - Server Setup and Administration: runbook/server-setup-and-administration.md
+        - First-Time Production Setup: runbook/first-time-setup.md
+        - Normal Production Updates: runbook/production-updates.md
+        - Docker Operations: runbook/docker-operations.md
 
-  - Technical Reference:
-      - Application Code Map: technical/application-code-map.md
-      - Server Runtime State: technical/server-runtime-state.md
-      - Game Phase and Turn Flow: technical/game-phase-and-turn-flow.md
-      - Timer System: technical/timer-system.md
-      - Socket.IO Events: technical/socketio-events.md
-      - Main Gameplay Code Paths: technical/gameplay-code-paths.md
+    - Technical Reference:
+        - Application Code Map: technical/application-code-map.md
+        - Server Runtime State: technical/server-runtime-state.md
+        - Game Phase and Turn Flow: technical/game-phase-and-turn-flow.md
+        - Timer System: technical/timer-system.md
+        - Socket.IO Events: technical/socketio-events.md
+        - Main Gameplay Code Paths: technical/gameplay-code-paths.md
 
-  - Operations and Troubleshooting:
-      - Basic Health Checks: runbook/health-checks.md
-      - Troubleshooting by Problem: runbook/troubleshooting.md
-      - Build and Dependency Problems: runbook/build-problems.md
-      - Git Problems: runbook/git-problems.md
-      - Recovery and Rollback: runbook/rollback.md
+    - Operations and Troubleshooting:
+        - Basic Health Checks: runbook/health-checks.md
+        - Troubleshooting by Problem: runbook/troubleshooting.md
+        - Build and Dependency Problems: runbook/build-problems.md
+        - Git Problems: runbook/git-problems.md
+        - Recovery and Rollback: runbook/rollback.md
 
-  - Security and Limitations:
-      - Security and Repository Notes: technical/security.md
-      - Current Operational Limitations: technical/limitations.md
+    - Security and Limitations:
+        - Security and Repository Notes: technical/security.md
+        - Current Operational Limitations: technical/limitations.md
 
-  - Production Hardening:
-      - HTTPS and Reverse Proxy: runbook/https-and-reverse-proxy.md
-      - Changes after HTTPS: runbook/changes-after-https.md
+    - Production Hardening:
+        - HTTPS and Reverse Proxy: runbook/https-and-reverse-proxy.md
+        - Changes after HTTPS: runbook/changes-after-https.md
 
-  - Quick Reference:
-      - Quick Reference: runbook/quick-reference.md
+    - Quick Reference:
+        - Quick Reference: runbook/quick-reference.md
+
+  - PoE Tracker:
+
+    - Home: poe-tracker/index.md
+    - Operations: poe-tracker/operations.md
+    - Troubleshooting and Recovery: poe-tracker/troubleshooting.md
+

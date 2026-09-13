@@ -42,7 +42,7 @@ client/src/socket.js
 
 server/index.js
 
-docker-compose.yml
+compose.yaml
 ```
 
 During local development, the React client can use
@@ -65,7 +65,7 @@ flowchart TD
     Dev --> DevVar["REACT_APP_SERVER_URL<br/>Development value"]
 
     Config --> RootEnv["Root .env"]
-    RootEnv --> Compose["docker-compose.yml"]
+    RootEnv --> Compose["compose.yaml"]
 
     DevVar --> Socket["client/src/socket.js"]
 
@@ -169,7 +169,7 @@ One slightly unusual part of the React setup is that
 Docker Compose reads the value from the root `.env` file and supplies it to the
 client build:
 
-```yaml title="docker-compose.yml"
+```yaml title="compose.yaml"
 client:
   build:
     context: ./client
@@ -263,7 +263,7 @@ During local development, if no value is provided, the fallback is
 In production, Docker Compose reads the value from the root `.env` file and
 supplies it to the server container through:
 
-```yaml title="docker-compose.yml"
+```yaml title="compose.yaml"
 environment:
   CLIENT_ORIGIN: ${CLIENT_ORIGIN}
 ```
@@ -311,12 +311,12 @@ the value is already inside the production JavaScript files.
 The production services are tied together through:
 
 ```text
-docker-compose.yml
+compose.yaml
 ```
 
 The structure is roughly:
 
-```yaml title="docker-compose.yml"
+```yaml title="compose.yaml"
 services:
 
   server:

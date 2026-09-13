@@ -208,7 +208,7 @@ time and work out approximately where the turn already is.
 
 `GameTable.jsx` converts the shared millisecond value into seconds:
 
-```js title="client/src/components/GameTable/GameTable.jsx"
+```js title="client/src/components/game/GameTable.jsx"
 const TURN_DURATION_SECONDS =
     turnDurationMs / 1000;
 ```
@@ -217,7 +217,7 @@ It then updates the visible time roughly once per second.
 
 The important calculation is effectively:
 
-```js title="client/src/components/GameTable/GameTable.jsx"
+```js title="client/src/components/game/GameTable.jsx"
 const elapsed = Math.floor(
     (Date.now() - turnStartedAt) / 1000
 );
@@ -365,7 +365,7 @@ selected their cards but waits until the very end of the turn.
 
 For later plays, where the round number is already known, the client calculates:
 
-```js title="client/src/components/GameTable/GameTable.jsx"
+```js title="client/src/components/game/GameTable.jsx"
 const autoSubmitAt =
     turnStartedAt +
     turnDurationMs -
@@ -420,7 +420,7 @@ Without protection, both paths could try to send the same cards.
 
 `GameTable.jsx` therefore uses:
 
-```js title="client/src/components/GameTable/GameTable.jsx"
+```js title="client/src/components/game/GameTable.jsx"
 submissionStartedRef
 ```
 

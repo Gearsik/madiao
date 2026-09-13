@@ -666,7 +666,7 @@ docker system df
 If disk use is the real issue, clean unused Docker resources carefully rather
 than changing application code. The safer cleanup commands and the difference
 between Docker resources are covered in
-[Cleaning Up Old Docker Resources](docker-operations.md#cleaning-up-old-docker-resources).
+[Cleaning Up Old Docker Resources](docker-operations.md#cleaning-old-docker-resources).
 
 
 ## React Build Failure
@@ -749,7 +749,7 @@ through Docker Compose.
 
 The Compose configuration passes it into the client build as an argument:
 
-```yaml title="docker-compose.yml"
+```yaml title="compose.yaml"
 client:
   build:
     context: ./client
@@ -938,7 +938,7 @@ YAML uses indentation to describe structure.
 
 For example:
 
-```yaml title="docker-compose.yml"
+```yaml title="compose.yaml"
 services:
   server:
     ports:
@@ -952,7 +952,7 @@ is not equivalent to moving `ports` to the wrong indentation level.
 
 Correct:
 
-```yaml title="docker-compose.yml"
+```yaml title="compose.yaml"
 ports:
   - "3001:3001"
 ```
@@ -996,7 +996,7 @@ A useful small routine is:
 docker compose config
 ```
 
-immediately after saving `docker-compose.yml`.
+immediately after saving `compose.yaml`.
 
 Only once that succeeds move to:
 
@@ -1020,7 +1020,7 @@ The current path is:
 ```mermaid
 flowchart TD
     Env["Root .env"]
-    Compose["docker-compose.yml"]
+    Compose["compose.yaml"]
     Arg["REACT_APP_SERVER_URL build argument"]
     Dockerfile["client/Dockerfile"]
     Build["npm run build"]
@@ -1037,7 +1037,7 @@ The full configuration path is documented in
 
 The current Compose structure is:
 
-```yaml title="docker-compose.yml"
+```yaml title="compose.yaml"
 client:
   build:
     context: ./client

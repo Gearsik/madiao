@@ -748,7 +748,7 @@ rollback commit itself is unusable.
 If an older revision expects a different environment/configuration setup,
 check that commit's:
 
-- `docker-compose.yml`;
+- `compose.yaml`;
 - Dockerfiles;
 - root and client environment setup;
 - documentation build setup;

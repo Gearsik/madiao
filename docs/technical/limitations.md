@@ -250,9 +250,10 @@ There is no deployed service storing things such as:
 - player profiles;
 - persistent rankings.
 
-The production Compose setup therefore only needs the `client` and `server`
-services. There is currently no database container, migration process, database
-backup or database connection string.
+The game itself only requires the `client` and `server` services. The production
+Compose setup also includes a separate `docs` service for the MkDocs documentation.
+There is currently no database container, migration process, database backup or
+database connection string.
 
 
 ### Advantages of the current approach

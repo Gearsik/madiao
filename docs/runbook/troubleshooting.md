@@ -1541,8 +1541,8 @@ Values such as:
 
 - `selectedCards`;
 - `playingCards`;
-- `challengeNotif`;
-- `timeoutNotif`;
+- `challengeResult`;
+- `timeoutPlayerName`;
 - `drinkingNotif`;
 - `pendingZoneCards`.
 

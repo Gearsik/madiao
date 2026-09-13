@@ -544,7 +544,7 @@ flowchart TD
 The main gameplay component is:
 
 ```text
-client/src/components/GameTable/GameTable.jsx
+client/src/components/game/GameTable.jsx
 ```
 
 This is the most important client-side file once the game has started.
@@ -598,27 +598,26 @@ authoritative game state.
 
 The current local UI state in `GameTable.jsx` includes:
 
-```js title="client/src/components/GameTable/GameTable.jsx"
+```js title="client/src/components/game/GameTable.jsx"
 selectedCards
+pendingZoneCards
 showDeclare
 playingCards
+turnTimeLeft
 error
-challengeNotif
-timeoutNotif
+challengeResult
+timeoutPlayerName
 drinkingNotif
 eliminated
-turnTimeLeft
 rematchReadyPlayerIds
 rematchPlayerCount
-pendingZoneCards
-pendingZoneNumber
-draftDeclaredNumber
 ```
 
 There is also:
 
-```js title="client/src/components/GameTable/GameTable.jsx"
+```js title="client/src/components/game/GameTable.jsx"
 submissionStartedRef
+submissionTimerRef
 ```
 
 which is a React ref rather than normal state. It is used to guard against the
@@ -627,7 +626,7 @@ sent.
 
 This distinction becomes very useful during debugging.
 
-For example, if `selectedCards`, `challengeNotif` or `pendingZoneCards` are
+For example, if `selectedCards`, `challengeResult` or `pendingZoneCards` are
 wrong while the server state is correct, that is probably a local React/UI
 problem.
 
@@ -795,7 +794,6 @@ notificationFadeMs
 challengeFlashMs
 challengeTransition
 challengeResultMs
-challengeDrinkNoticeMs
 challengeOverlayMs
 
 timeoutMessageMs

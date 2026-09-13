@@ -87,7 +87,7 @@ This does not mean the client has no state of its own.
 
 For example, `GameTable.jsx` keeps information such as:
 
-```js title="client/src/components/GameTable/GameTable.jsx"
+```js title="client/src/components/game/GameTable.jsx"
 const [players, setPlayers] = useState(initialGameData.players);
 const [myHand, setMyHand] = useState(initialGameData.hand);
 const [pile, setPile] = useState(initialGameData.pile);
@@ -100,7 +100,7 @@ from the server.
 At the same time, the component also has state which exists purely for the user
 interface:
 
-```js title="client/src/components/GameTable/GameTable.jsx"
+```js title="client/src/components/game/GameTable.jsx"
 const [selectedCards, setSelectedCards] = useState([]);
 const [showDeclare, setShowDeclare] = useState(false);
 const [playingCards, setPlayingCards] = useState(false);
@@ -410,7 +410,7 @@ io.to(lobbyCode).emit(
 
 and the client listens for that same event:
 
-```js title="client/src/components/GameTable/GameTable.jsx"
+```js title="client/src/components/game/GameTable.jsx"
 socket.on('game_state_updated', handleGameStateUpdated);
 ```
 

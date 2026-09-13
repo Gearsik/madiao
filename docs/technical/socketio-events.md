@@ -71,7 +71,7 @@ sent manually by the React code.
 
 The create screen sends:
 
-```js title="client/src/components/JoinScreen/JoinScreen.jsx"
+```js title="client/src/components/lobby/JoinScreen.jsx"
 socket.emit('createLobby', {
     name: cleanName
 });
@@ -96,7 +96,7 @@ The player who creates the lobby automatically becomes its host.
 
 Joining sends:
 
-```js title="client/src/components/JoinScreen/JoinScreen.jsx"
+```js title="client/src/components/lobby/JoinScreen.jsx"
 socket.emit('joinLobby', {
     name: cleanName,
     code: cleanCode
@@ -123,7 +123,7 @@ Server validation decides whether the action actually happens.
 
 The host sends:
 
-```js title="client/src/components/LobbyRoom/LobbyRoom.jsx"
+```js title="client/src/components/lobby/LobbyRoom.jsx"
 socket.emit('startGame');
 ```
 
@@ -166,7 +166,7 @@ The client sends:
 
 using:
 
-```js title="client/src/components/GameTable/GameTable.jsx"
+```js title="client/src/components/game/GameTable.jsx"
 socket.timeout(3000).emit(
     'declareCards',
     {
@@ -192,7 +192,7 @@ most of the other game events and is covered in more detail below.
 
 The client sends:
 
-```js title="client/src/components/GameTable/GameTable.jsx"
+```js title="client/src/components/game/GameTable.jsx"
 socket.emit('challenge');
 ```
 
@@ -219,7 +219,7 @@ It is not telling the server who should lose or whether the play was honest.
 
 After game over:
 
-```js title="client/src/components/GameTable/GameTable.jsx"
+```js title="client/src/components/game/GameTable.jsx"
 socket.emit('toggleRematchReady');
 ```
 
@@ -824,7 +824,7 @@ socket.on(
 
 When that component leaves the screen, it should remove the same listener:
 
-```js title="client/src/components/GameTable/GameTable.jsx"
+```js title="client/src/components/game/GameTable.jsx"
 socket.off(
     'game_state_updated',
     handleGameStateUpdated

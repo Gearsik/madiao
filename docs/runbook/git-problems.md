@@ -61,7 +61,7 @@ Git may show something such as:
 
 ```text
 modified:   server/index.js
-modified:   docker-compose.yml
+modified:   compose.yaml
 ```
 
 or:
@@ -373,7 +373,7 @@ git restore path/to/file
 For example:
 
 ```bash
-git restore docker-compose.yml
+git restore compose.yaml
 ```
 
 This returns the working-tree version to the currently checked-out commit.
@@ -384,7 +384,7 @@ This returns the working-tree version to the currently checked-out commit.
 Several paths can be supplied together:
 
 ```bash
-git restore server/index.js docker-compose.yml
+git restore server/index.js compose.yaml
 ```
 
 Or, if every tracked working-tree change is definitely disposable:

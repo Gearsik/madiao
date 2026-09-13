@@ -827,7 +827,7 @@ The commands used most often for Madiao are:
 
 Most of these commands should be run from `~/madiao` when they use
 `docker compose`, because Compose needs to find the Madiao
-`docker-compose.yml` file.
+`compose.yaml` file.
 
 
 ## Chapter Summary

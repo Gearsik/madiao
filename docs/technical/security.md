@@ -45,7 +45,7 @@ Examples include:
 - CSS;
 - SVG/image assets;
 - Dockerfiles;
-- `docker-compose.yml`;
+- `compose.yaml`;
 - `package.json`;
 - `package-lock.json`;
 - shared timing constants;
@@ -164,7 +164,7 @@ root `.env` file through Docker Compose.
 
 Compose passes the value into the client image as a build argument:
 
-```yaml title="docker-compose.yml"
+```yaml title="compose.yaml"
 client:
   build:
     context: ./client
@@ -225,7 +225,7 @@ configuration.
 The production value is kept in the root `.env` file and Docker Compose passes
 it into the running server container through:
 
-```yaml title="docker-compose.yml"
+```yaml title="compose.yaml"
 environment:
   CLIENT_ORIGIN: ${CLIENT_ORIGIN}
 ```
@@ -305,7 +305,7 @@ The production server may also use SSH when pulling from the Git repository.
 The same rule applies.
 
 The credential should live in the server user's SSH configuration rather than
-inside `docker-compose.yml`, a Dockerfile, README, runbook or shell script
+inside `compose.yaml`, a Dockerfile, README, runbook or shell script
 committed to Git.
 
 
@@ -600,7 +600,7 @@ The current client configuration path is described in
 
 In the current Compose setup this is a normal public build value:
 
-```yaml title="docker-compose.yml"
+```yaml title="compose.yaml"
 args:
   REACT_APP_SERVER_URL: ${REACT_APP_SERVER_URL}
 ```
@@ -684,7 +684,7 @@ own or see another player's private hand simply by changing the interface.
 | `package.json` | Yes | Dependency definition |
 | `package-lock.json` | Yes | Reproducible dependency tree |
 | Dockerfiles | Yes | Deployment definition |
-| `docker-compose.yml` with non-secret config | Yes | Deployment definition |
+| `compose.yaml` with non-secret config | Yes | Deployment definition |
 | Documentation | Yes | Project documentation |
 | `.env.example` | Yes | Safe configuration template |
 | Root `.env` | No | Machine-specific production configuration |

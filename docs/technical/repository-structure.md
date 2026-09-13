@@ -29,7 +29,7 @@ Madiao/
 ├── client/
 ├── server/
 ├── docs/
-├── docker-compose.yaml
+├── compose.yaml
 ├── Dockerfile
 ├── .dockerignore
 ├── mkdocs.yaml
@@ -47,7 +47,7 @@ The easiest way of thinking about them is:
 | `client/` | Everything needed for the browser version of the game |
 | `server/` | Multiplayer game logic and Socket.IO server |
 | `docs/` | Documentation website and runbook pages |
-| `docker-compose.yml` | Runs the production client, server and documentation services together |
+| `compose.yaml` | Runs the production client, server and documentation services together |
 | `Dockerfile` | Builds the MkDocs documentation into its production nginx container |
 | `mkdocs.yaml` | Controls the documentation website |
 | `CHANGELOG.md` | Keeps track of notable changes between versions |
@@ -80,9 +80,10 @@ client/
 │   │   └── icons/
 │   │
 │   ├── components/
-│   │   ├── JoinScreen/
-│   │   ├── LobbyRoom/
-│   │   └── GameTable/
+│   │   ├── lobby/
+│   │   │   ├── JoinScreen.jsx
+│   │   │   └── LobbyRoom.jsx
+│   │   └── game/
 │   │       ├── GameTable.jsx
 │   │       ├── CardHand.jsx
 │   │       ├── PlayerFrame.jsx
@@ -99,7 +100,6 @@ client/
 │   └── socket.js
 │
 ├── .env.development
-├── .env.production
 ├── Dockerfile
 ├── .dockerignore
 ├── package.json
@@ -237,7 +237,7 @@ Other assets are imported directly into React components from inside `src/`.
 
 An example of this is the sake-cup icon used by `PlayerFrame.jsx`:
 
-```js title="client/src/components/PlayerFrame/PlayerFrame.jsx"
+```js title="client/src/components/game/PlayerFrame.jsx"
 import { ReactComponent as SakeCups } from '../../assets/icons/sake-cups.svg';
 ```
 
@@ -275,8 +275,8 @@ server/
 │   ├── deck.test.js
 │   ├── rules.js
 │   ├── rules.test.js
-│   └── state.js
-│   ├── state.test.js
+│   ├── state.js
+│   └── state.test.js
 │
 ├── shared/
 │   └── constants.js
@@ -403,6 +403,7 @@ self-contained parts of the server logic:
 deck.test.js
 rules.test.js
 state.test.js
+```
 
 ### Server package files
 
@@ -483,12 +484,12 @@ A few root-level files control how the project is deployed and how the
 documentation itself is built.
 
 
-### `docker-compose.yml`
+### `compose.yaml`
 
 The root Compose file is:
 
 ```text
-docker-compose.yml
+compose.yaml
 ```
 
 Its job is to describe the production Docker services together.
@@ -546,14 +547,20 @@ behaviour changed without having to inspect every individual Git commit.
 
 ### Documentation files
 
-The documentation website is kept alongside the application and is currently
-split into technical documentation and the production runbook:
+The documentation website is kept alongside the application.
+
+Most of the site documents Madiao and is split between technical documentation
+and the production runbook. A smaller, separate section is also included for the
+PoE Tracker project, covering its normal operation and troubleshooting procedures.
 
 ```text
 mkdocs.yaml
 
 docs/
 ├── index.md
+│
+├── stylesheets/
+│   └── extra.css
 │
 ├── technical/
 │   ├── runtime-overview.md
@@ -568,19 +575,25 @@ docs/
 │   ├── security.md
 │   └── limitations.md
 │
-└── runbook/
-    ├── server-setup-and-administration.md
-    ├── first-time-setup.md
-    ├── production-updates.md
-    ├── docker-operations.md
-    ├── health-checks.md
-    ├── troubleshooting.md
-    ├── build-problems.md
-    ├── git-problems.md
-    ├── rollback.md
-    ├── https-and-reverse-proxy.md
-    ├── changes-after-https.md
-    └── quick-reference.md
+├── runbook/
+│   ├── server-setup-and-administration.md
+│   ├── first-time-setup.md
+│   ├── production-updates.md
+│   ├── docker-operations.md
+│   ├── health-checks.md
+│   ├── troubleshooting.md
+│   ├── build-problems.md
+│   ├── git-problems.md
+│   ├── rollback.md
+│   ├── https-and-reverse-proxy.md
+│   ├── changes-after-https.md
+│   └── quick-reference.md
+│
+└── poe-tracker/
+    ├── index.md
+    ├── operations.md
+    └── troubleshooting.md
+
 ```
 
 `mkdocs.yaml` controls the Material for MkDocs site itself, including the site
@@ -589,6 +602,13 @@ name, theme and navigation order.
 The Markdown files under `technical/` explain how the application is structured
 and how its main systems work. The files under `runbook/` focus more on
 deployment, maintenance, troubleshooting and recovery.
+
+The files under `poe-tracker/` belong to the separate PoE Tracker project. That
+section is intentionally smaller and focuses on operating and troubleshooting
+its Docker-based data pipeline.
+
+The `stylesheets/` directory contains the custom CSS used to adjust the
+appearance of the documentation site.
 
 Keeping both parts inside the same `docs/` directory means the documentation
 remains part of the same Git repository as the application. Code and the
@@ -651,7 +671,7 @@ The easiest high-level map to remember is:
 | `client/` | What the player sees and interacts with |
 | `server/` | What the game actually decides |
 | `docs/` | How the project is explained and maintained |
-| `docker-compose.yml` | How the production client and server are managed together |
+| `compose.yaml` | How the production client and server are managed together |
 | `mkdocs.yaml` | How the documentation website is organised |
 
 Inside the client, `GameTable.jsx` acts as the main game screen and delegates
